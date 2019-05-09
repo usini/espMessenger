@@ -9,8 +9,8 @@ const String DEFAULT_PASS4 = "";
 const String DEFAULT_NAME = "textmatrix";
 const String DEFAULT_AP_SSID = "textmatrix";
 const String DEFAULT_AP_PASS = "textmatrix";
-const String DEFAULT_WEB_USER = "";
-const String DEFAULT_WEB_PASS = "";
+const String DEFAULT_WEB_USER = "textmatrix";
+const String DEFAULT_WEB_PASS = "textmatrix";
 
 const char* ssid1;
 const char* pass1;
