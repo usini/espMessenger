@@ -1,248 +1,133 @@
-#include "FS.h"
-#include <ArduinoJson.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266WiFiMulti.h>
+/*
+  ESPManager
+  Connected Text Matrix for ESP8266
+  By Sarrailh Rémi
+  Licence : MIT
+  https://github.com/maditnerd/espMessenger
+
+  Library required:
+  --> Arduino Thread
+  --> MD_MAX72xx
+  --> ArduinoJSON (v6)
+*/
+// Global message buffers shared by Serial and Scrolling functions
+#define BUF_SIZE  75
+char curMessage[BUF_SIZE];
+const char * newMessage = "Wifi";
+bool newMessageAvailable = false;
+#include <MD_MAX72xx.h>
+#include <Thread.h>
 #include "settings.h"
-#include <ESP8266mDNS.h>
-#include <ESP8266WebServer.h>
-#include <U8g2lib.h>
-ESP8266WiFiMulti network;
-U8G2_MAX7219_32X8_F_4W_SW_SPI u8g2(U8G2_R0, /* clock=*/ D5, /* data=*/ D6, /* cs=*/ D7, /* dc=*/ U8X8_PIN_NONE, /* reset=*/ U8X8_PIN_NONE);
-uint16_t pos = 0;
-uint16_t len;
-int bitpos = 0;
-const char * str = "Hello World";
+#include "wifi.h"
+#include "web.h"
 
-bool connection = false;
-ESP8266WebServer server(80); //Server on port 80
 
-const char HTTP_SETTINGS[] PROGMEM = R"=====(
-<html>
+#define CLK_PIN   D5  // or SCK
+#define DATA_PIN  D6  // or MOSI
+#define CS_PIN    D7  // or SS
+#define HARDWARE_TYPE MD_MAX72XX::FC16_HW
+#define MAX_DEVICES 4
+#define CHAR_SPACING  1 // pixels between characters
+MD_MAX72XX mx = MD_MAX72XX(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
 
-<title> Text Matrix </title>
-<h1> Text Matrix </h1>
-<h2> Settings </h2>
-<h3> Web Access </h3>
-<form id="settings_form">
-        Name <input type="text" name="name"><br>
-        User      <input type="text" name="web_user"><br>
-        Password  <input type="password" name="web_pass"><br>
-<h3> Wi-Fi </h3>
-    SSID 1      <input type="text" name="ssid1"><br>
-    PASSWORD 1 <input type="password" name="pass1"><br>
-    SSID 2      <input type="text" name="ssid2"><br>
-    PASSWORD 2 <input type="password" name="pass2"><br>
-    SSID 3 <input type="text" name="ssid3"><br>
-    PASSWORD 3 <input type="password" name="pass3"><br>
-    SSID 4 <input type="text" name="ssid4"><br>
-    PASSWORD 4 <input type="password" name="pass4"><br>
-<h3> Access Point </h3>
-        SSID       <input type="text" name="ap_ssid"><br>
-        PASSWORD <input type="text" name="ap_pass"><br>
-        <input type="submit">
-</form>
-<button onclick="window.location.href = '/'"> Go back </button>
-<script>
-fetch("/load")
-.then(function(res){return res.json();})
-.then(function(data){
-    for (form_obj in data){
-        document.getElementsByName(form_obj)[0].value = data[form_obj];
-    }
-});
 
-document.getElementById('settings_form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const data = Array.from(formData.entries()).reduce((memo, pair) => ({
-        ...memo,
-        [pair[0]]: pair[1],
-    }), {});
-    fetch("/save", {
-        headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json"
-        },
-        method: "POST",
-        body: JSON.stringify(data)
-    });
-});
 
-</script>
-</html>
-)=====";
-
-const char HTTP_INDEX[] PROGMEM = R"=====(
-<html>
-
-<title> Text Matrix </title>
-<h1> Text Matrix </h1>
-<form id="display_form">
-    Text: <input type="text" name="message"><br>
-    <input type="submit">
-</form>
-
-<button onclick="window.location.href = '/settings'"> Settings </button>
-<h1> History </h1>
-<ul>
-    <li>MESSAGE1</li>
-    <li>MESSAGE2</li>
-    <li>MESSAGE3</li>
-    <li>MESSAGE4</li>
-    <li>MESSAGE5</li>
-</ul>
-<script>
-document.getElementById('display_form').addEventListener('submit', (e) => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  const data = Array.from(formData.entries()).reduce((memo, pair) => ({
-    ...memo,
-    [pair[0]]: pair[1],
-  }), {});
-  fetch("/message", {
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json"
-      },
-      method: "POST",
-      body: JSON.stringify(data)
-  });
-});
-</script>
-</html>
-)=====";
+uint16_t  scrollDelay = 50;  // in milliseconds
+Thread matrixThread = Thread();
 
 void setup() {
   Serial.begin(74880);
   Serial.println("~~~~~~~~~~  Text Matrix ~~~~~~~~~~");
-  u8g2.begin();
-  u8g2.setFont(u8g2_font_victoriabold8_8r);  // choose a 8x8 u8g2 font
-  len = strlen(str)*8;
-  //Check Settings
-  settings_state = checkSettings();
-  if(settings_state){
-    settings_state = readSettings();
+  mx.begin();
+  mx.setShiftDataInCallback(scrollDataSource);
+  mx.setShiftDataOutCallback(scrollDataSink);
+
+  matrixThread.onRun(displayMessage);
+  matrixThread.setInterval(scrollDelay);
+  //Check if Settings exists or create it
+  if(checkSettings()){
+    settings_state = readSettings(); //Read settings
   }
 
-  if(settings_state){
-    connect();
-    server.on("/",webIndex);
-    server.on("/message",webMessage);
-    server.on("/settings",webSettings);
-    server.on("/save",webSaveSettings);
-    server.on("/load",webLoadSettings);
-    server.on("/reboot",webReboot);
-    server.begin();
+  if(settings_state){ //If settings was performs correctly
+    connect();  //Connect to WiFi (or create Accesss Point)
+    webStart(); //Start WebServer
   }
+  strcpy(curMessage, WiFi.localIP().toString().c_str());
+  //newMessage[0] = '\0';
 }
 
 void loop() {
-  if(settings_state){
-    server.handleClient();
-    MDNS.update();
-    displayMessage();
+  if(settings_state){ // Check if settings was performs correctly or do nothing
+    server.handleClient(); //Manage Web Server
+    MDNS.update(); // Manage Bonjour Name (textmatrix.local by default)
+    if(matrixThread.shouldRun()){
+      matrixThread.run(); //Manage Message Routine
+    }
   }
 }
 
-void webReboot(){
-  ESP.restart();
-}
 
-void webSettings(){
-  server.send(200, "text/html", HTTP_SETTINGS);
-}
-
-void webSaveSettings(){
-  if(server.hasArg("plain") == false){
-    server.send(200, "text/html", "no message");
-  } else {
-    File file = SPIFFS.open(settings_file,"w");
-    file.println(server.arg("plain"));
-    file.close();
-    server.send(200, "text/json", server.arg("plain"));
-  }
-}
-
-void webLoadSettings(){
-  File file = SPIFFS.open(settings_file, "r");
-  String settings_json;
-  while (file.available()){
-    settings_json += char(file.read());
-  }
-  file.close();
-  server.send(200, "text/json", settings_json);
-}
-
-void webMessage(){
-  if(server.hasArg("plain") == false){
-    server.send(200, "text/html", "no message");
-  } else {
-    StaticJsonDocument<200> doc;
-    DeserializationError error = deserializeJson(doc, server.arg("plain"));
-    if (error) {
-      Serial.print(F("deserializeJson() failed: "));
-      Serial.println(error.c_str());
-      return;
-    }
-    str = doc["message"].as<char*>();
-    server.send(200, "text/json", doc["message"]);
-  }
-}
-
-void webIndex() {
-  server.send(200, "text/html", HTTP_INDEX);
-}
-
-void connect(){
-  Serial.println("... [WIFI] Connection ...");
-    WiFi.mode(WIFI_STA);
-    network.addAP(ssid1,pass1);
-    network.addAP(ssid2,pass2);
-    network.addAP(ssid3,pass3);
-    network.addAP(ssid4,pass4);
-    int wait_for_network = 600;
-    while (network.run() != WL_CONNECTED){
-      Serial.println(wait_for_network);
-      wait_for_network--;
-      if(wait_for_network == 0){
-        break;
-      }
-      delay(100);
-    }
-    if(wait_for_network == 0){
-      WiFi.mode(WIFI_AP);
-      WiFi.softAP(ap_ssid,ap_pass);
-      Serial.print("--> Access Point Mode : ");
-      Serial.println(WiFi.softAPIP());
-    } else {
-      Serial.print("--> Network Mode : ");
-      Serial.println(WiFi.SSID());
-      Serial.println(WiFi.localIP());
-    }
-    if (!MDNS.begin(name)) {
-      Serial.println("--> No network name :-(");
-    } else{
-      Serial.print("--> Network Name : ");
-      Serial.println(name);
-      //MDNS.addService("http","tcp", 80);
-    }
-}
-#define BUF_LEN 256
 void displayMessage(){
-  u8g2.clearBuffer();         // clear the internal memory
-  char buf[BUF_LEN];
-  uint16_t start = bitpos / 8;
-  uint16_t i;
-  for( i = 0; i < BUF_LEN-1; i++)
-  {
-    buf[i] = str[start+i];
-    if ( str[start+i] == '\0' )
-      break;
-  }
-  buf[BUF_LEN-1] = '\0';
-  u8g2.drawStr( -(bitpos & 7), 8, buf);     // write buffer
-  u8g2.sendBuffer();          // transfer internal memory to the display
-  pos++;
-  if ( pos >= len )
-    pos = 0;
+  mx.transform(MD_MAX72XX::TSL);  // scroll along - the callback will load all the data
 }
+
+void scrollDataSink(uint8_t dev, MD_MAX72XX::transformType_t t, uint8_t col)
+// Callback function for data that is being scrolled off the display
+{
+}
+
+uint8_t scrollDataSource(uint8_t dev, MD_MAX72XX::transformType_t t)
+// Callback function for data that is required for scrolling into the display
+{
+  static char   *p = curMessage;
+  static uint8_t  state = 0;
+  static uint8_t  curLen, showLen;
+  static uint8_t  cBuf[8];
+  uint8_t colData;
+
+  // finite state machine to control what we do on the callback
+  switch(state)
+  {
+    case 0: // Load the next character from the font table
+      showLen = mx.getChar(*p++, sizeof(cBuf)/sizeof(cBuf[0]), cBuf);
+      curLen = 0;
+      state++;
+
+      // if we reached end of message, reset the message pointer
+      if (*p == '\0')
+      {
+        p = curMessage;     // reset the pointer to start of message
+        if (newMessageAvailable)  // there is a new message waiting
+        {
+          strcpy(curMessage, newMessage);	// copy it in
+          newMessageAvailable = false;
+        }
+      }
+      // !! deliberately fall through to next state to start displaying
+
+    case 1: // display the next part of the character
+      colData = cBuf[curLen++];
+      if (curLen == showLen)
+      {
+        showLen = CHAR_SPACING;
+        curLen = 0;
+        state = 2;
+      }
+      break;
+
+    case 2: // display inter-character spacing (blank column)
+      colData = 0;
+      if (curLen == showLen)
+        state = 0;
+      curLen++;
+      break;
+
+    default:
+      state = 0;
+  }
+
+  return(colData);
+}
+
+

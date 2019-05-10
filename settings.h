@@ -1,3 +1,6 @@
+#include <ArduinoJson.h>
+#include "FS.h"
+
 const String DEFAULT_SSID1 = "";
 const String DEFAULT_PASS1 = "";
 const String DEFAULT_SSID2 = "";
