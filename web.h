@@ -9,12 +9,12 @@ void webIndex() {
 }
 
 // Display settings.html (/settings)
-void webSettings(){
+void webSettings() {
   server.send(200, "text/html", HTTP_SETTINGS);
 }
 
 // If copy body request into settings.json (/save)
-void webSaveSettings(){
+void webSaveSettings() {
   if(server.hasArg("plain") == false){
     server.send(200, "text/html", "no message");
   } else {
@@ -26,7 +26,7 @@ void webSaveSettings(){
 }
 
 // Load settings.json and display it
-void webLoadSettings(){
+void webLoadSettings() {
   File file = SPIFFS.open(settings_file, "r");
   String settings_json;
   while (file.available()){
@@ -37,12 +37,12 @@ void webLoadSettings(){
 }
 
 // Restart ESP
-void webReboot(){
+void webReboot() {
   ESP.restart();
 }
 
 // Display Message on Led Matrix
-void webMessage(){
+void webMessage() {
   if(server.hasArg("plain") == false){
     server.send(200, "text/html", "no message");
   } else {
@@ -62,14 +62,29 @@ void webMessage(){
   }
 }
 
-
 //Generate endpoints
-void webStart(){
+void webStart() {
     server.on("/",webIndex);
     server.on("/message",webMessage);
     server.on("/settings",webSettings);
     server.on("/save",webSaveSettings);
     server.on("/load",webLoadSettings);
     server.on("/reboot",webReboot);
+    server.on("/description.xml", HTTP_GET, []() {
+      SSDP.schema(server.client());
+    });
     server.begin();
+
+    SSDP.setSchemaURL("description.xml");
+    SSDP.setHTTPPort(80);
+    SSDP.setName(name);
+    SSDP.setDeviceType("upnp:rootdevice");
+    SSDP.setSerialNumber("000000000001");
+    SSDP.setURL("/");
+    SSDP.setModelName("ESP Messenger");
+    SSDP.setModelNumber("0000000000001");
+    SSDP.setModelURL("http://usini.eu/espmessenger");
+    SSDP.setManufacturer("Usini");
+    SSDP.setManufacturerURL("http://usini.eu");
+    SSDP.begin();
 }

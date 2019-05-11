@@ -30,10 +30,7 @@ String web_user;
 String web_pass;
 
 const char *settings_file = "/settings.json";
-
 bool settings_state = false;
-const size_t bufferLen = 80;
-char buffer[bufferLen];
 
 bool initSettings() {
   Serial.println("... [SETTINGS] Generating settings");
