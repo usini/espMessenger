@@ -12,7 +12,7 @@
 #define BUF_SIZE  1024
 
 char curMessage[BUF_SIZE];
-char * newMessage = "";
+char * newMessage = " ";
 bool newMessageAvailable = false;
 static byte c1;  // Last character buffer
 // Scrolling parameters
@@ -52,16 +52,12 @@ void matrixUpdate(){
 byte utf8ascii(byte ascii) {
     if ( ascii<128 )   // Standard ASCII-set 0..0x7F handling
     {   c1=0;
-        Serial.print("STANDARD:");
-        Serial.println(ascii, DEC);
         return( ascii );
     }
 
     // get previous input
     byte last = c1;   // get last char
     c1=ascii;         // remember actual character
-    Serial.println("NON STANDARD:");
-    Serial.println(c1, DEC);
     switch (last)     // conversion depending on first UTF8-character
     {   case 0xC2: return  (ascii);  break;
         case 0xC3: return  (ascii | 0xC0);  break;
