@@ -32,6 +32,7 @@ String web_pass;
 const char *settings_file = "/settings.json";
 bool settings_state = false;
 
+//Initialize Settings with Default Value
 bool initSettings() {
   Serial.println("... [SETTINGS] Generating settings");
   StaticJsonDocument<2048> settings;
@@ -62,29 +63,34 @@ bool initSettings() {
 }
 
 bool checkSettings(){
+  //Open SPIFFS, format it if it needed to be format (can take some time)
   if (!SPIFFS.begin()){
     Serial.println("... [SETTINGS] Can't open flash memory [FAIL]");
     return false;
   }
 
+  //Check if Json file exists
   File file = SPIFFS.open(settings_file, "r");
   if(!file){
     Serial.println("... [SETTINGS] Settings doesn't exists");
-    return initSettings();
+    return initSettings(); //Initialize settings
   } else {
-    file.close();
+    file.close(); //Settings exists close it.
     return true;
   }
   //Shouldn't happens
   return false;
 }
 
+//Read Settings file and setup variables
 bool readSettings(){
   Serial.println("... [SETTINGS] Opening settings.json ...");
   File file = SPIFFS.open(settings_file, "r");
   StaticJsonDocument<2048> doc;
   DeserializationError error = deserializeJson(doc, file);
   JsonObject settings = doc.as<JsonObject>();
+
+  //If JSON cannot be deserialize, we reset the settings file
   if(error){
     Serial.println("... [FAIL] Settings corrupted reinitialisation required");
     Serial.println(error.c_str());
@@ -94,6 +100,7 @@ bool readSettings(){
       return false;
     }
   }
+
   ssid1 = settings["ssid1"].as<char*>();
   pass1 = settings["pass1"].as<char*>();
   ssid2 = settings["ssid2"].as<char*>();

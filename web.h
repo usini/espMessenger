@@ -13,7 +13,7 @@ void webSettings() {
   server.send(200, "text/html", HTTP_SETTINGS);
 }
 
-// If copy body request into settings.json (/save)
+// Copy body request into settings.json (/save)
 void webSaveSettings() {
   if(server.hasArg("plain") == false){
     server.send(200, "text/html", "no message");
@@ -49,7 +49,7 @@ void webMessage() {
     StaticJsonDocument<2048> doc;
     DeserializationError error = deserializeJson(doc, server.arg("plain"));
     if (error) {
-      Serial.print(F("deserializeJson() failed: "));
+      Serial.print("[MESSAGE] : Deserialize Json failed");
       //String error_string = "{\"error\": \"" + String(error) + "\"}";
       server.send(200, "text/json", "error");
       return;
@@ -63,17 +63,18 @@ void webMessage() {
 //Generate endpoints
 void webStart() {
     Serial.println("... [WEB] Starting web server .. ");
-    server.on("/",webIndex);
-    server.on("/message",webMessage);
-    server.on("/settings",webSettings);
-    server.on("/save",webSaveSettings);
-    server.on("/load",webLoadSettings);
-    server.on("/reboot",webReboot);
+    server.on("/",webIndex); //Display main Page
+    server.on("/message",webMessage); //Send Message (json)
+    server.on("/settings",webSettings); //Display Settings page
+    server.on("/save",webSaveSettings); //Send Settings to SPIFFS (json)
+    server.on("/load",webLoadSettings); //Load Settings from SPIFFS (json)
+    server.on("/reboot",webReboot); //Reboot ESP
     server.on("/description.xml", HTTP_GET, []() {
       SSDP.schema(server.client());
     });
     server.begin();
 
+    //Simple Service Discovery Protocol : Display ESP in Windows Network Tab
     SSDP.setSchemaURL("description.xml");
     SSDP.setHTTPPort(80);
     SSDP.setName(name);

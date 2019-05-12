@@ -12,7 +12,7 @@
 #define BUF_SIZE  1024
 
 char curMessage[BUF_SIZE];
-char * newMessage = "Matrix";
+char * newMessage = "";
 bool newMessageAvailable = false;
 static byte c1;  // Last character buffer
 // Scrolling parameters
@@ -22,6 +22,7 @@ textEffect_t scrollEffect = PA_SCROLL_LEFT;
 
 MD_Parola matrix = MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
 
+//Initialize Matrix
 void initMatrix(){
   //Settings Matrix
   matrix.begin();
@@ -33,6 +34,7 @@ void initMatrix(){
   matrix.displayScroll(curMessage, PA_LEFT, scrollEffect, frameDelay);
 }
 
+//Scroll text on Matrix
 void matrixUpdate(){
     if (matrix.displayAnimate())
     {
@@ -44,22 +46,6 @@ void matrixUpdate(){
       matrix.displayReset();
   }
 }
-
-/*
-String removeNonAscii(String message){
-  String buffer = "";
-  bool non_ascii = false;
-  for(int character = 0;character < message.length();character++){
-    Serial.println(message[character], DEC);
-    if(message[character] > 255){
-      Serial.println("NON EXTENDED ASCII DETECTED");
-    } else {
-      buffer = buffer + message[character];
-    }
-  }
-  return buffer;
-}
-*/
 
 //https://playground.arduino.cc/Main/Utf8ascii/
 
@@ -86,8 +72,7 @@ byte utf8ascii(byte ascii) {
 }
 
 // convert String object from UTF8 String to Extended ASCII
-String utf8ascii(String s)
-{      
+String utf8ascii(String s) {
         String r="";
         char c;
         for (int i=0; i<s.length(); i++)
@@ -99,8 +84,7 @@ String utf8ascii(String s)
 }
 
 // In Place conversion UTF8-string to Extended ASCII (ASCII is shorter!)
-void utf8ascii(char* s)
-{
+void utf8ascii(char* s) {
         int k=0;
         char c;
         for (int i=0; i<strlen(s); i++)
@@ -112,7 +96,7 @@ void utf8ascii(char* s)
         s[k]=0;
 }
 
-void matrixText(String message){
+void matrixText(String message) {
   //message = removeNonAscii(message);
   message = ' ' + message;
   message = utf8ascii(message);
