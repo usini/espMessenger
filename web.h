@@ -54,16 +54,15 @@ void webMessage() {
       server.send(200, "text/json", "error");
       return;
     }
-    newMessage = doc["message"].as<char*>();
-    newMessageAvailable = true;
-    Serial.println(newMessage);
 
+    matrixText(doc["message"].as<String>());
     server.send(200, "text/json", doc["message"]);
   }
 }
 
 //Generate endpoints
 void webStart() {
+    Serial.println("... [WEB] Starting web server .. ");
     server.on("/",webIndex);
     server.on("/message",webMessage);
     server.on("/settings",webSettings);

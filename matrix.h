@@ -1,4 +1,6 @@
+#include <MD_Parola.h>
 #include <MD_MAX72xx.h>
+#include "Parola_Fonts_data.h"
 #include <Thread.h>
 
 #define CLK_PIN   D5  // or SCK
@@ -7,81 +9,114 @@
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define MAX_DEVICES 4
 #define CHAR_SPACING  1 // pixels between characters
-#define BUF_SIZE  75
+#define BUF_SIZE  1024
 
 char curMessage[BUF_SIZE];
-const char * newMessage = "Wifi";
+char * newMessage = "Matrix";
 bool newMessageAvailable = false;
-uint16_t  scrollDelay = 50;  // in milliseconds
+static byte c1;  // Last character buffer
+// Scrolling parameters
+const uint16_t PAUSE_TIME = 2000;
+uint8_t frameDelay = 50;  // default frame delay value
+textEffect_t scrollEffect = PA_SCROLL_LEFT;
 
-MD_MAX72XX matrix = MD_MAX72XX(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
-Thread matrixThread = Thread();
-
-void displayMessage(){
-  matrix.transform(MD_MAX72XX::TSL);  // scroll along - the callback will load all the data
-}
-
-void scrollDataSink(uint8_t dev, MD_MAX72XX::transformType_t t, uint8_t col) {
-  // Callback function for data that is being scrolled off the display
-}
-
-uint8_t scrollDataSource(uint8_t dev, MD_MAX72XX::transformType_t t) {
-  // Callback function for data that is required for scrolling into the display
-  static char   *p = curMessage;
-  static uint8_t  state = 0;
-  static uint8_t  curLen, showLen;
-  static uint8_t  cBuf[8];
-  uint8_t colData;
-
-  // finite state machine to control what we do on the callback
-  switch(state)
-  {
-    case 0: // Load the next character from the font table
-      showLen = matrix.getChar(*p++, sizeof(cBuf)/sizeof(cBuf[0]), cBuf);
-      curLen = 0;
-      state++;
-
-      // if we reached end of message, reset the message pointer
-      if (*p == '\0')
-      {
-        p = curMessage;     // reset the pointer to start of message
-        if (newMessageAvailable)  // there is a new message waiting
-        {
-          strcpy(curMessage, newMessage);	// copy it in
-          newMessageAvailable = false;
-        }
-      }
-      // !! deliberately fall through to next state to start displaying
-
-    case 1: // display the next part of the character
-      colData = cBuf[curLen++];
-      if (curLen == showLen)
-      {
-        showLen = CHAR_SPACING;
-        curLen = 0;
-        state = 2;
-      }
-      break;
-
-    case 2: // display inter-character spacing (blank column)
-      colData = 0;
-      if (curLen == showLen)
-        state = 0;
-      curLen++;
-      break;
-
-    default:
-      state = 0;
-  }
-
-  return(colData);
-}
+MD_Parola matrix = MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
 
 void initMatrix(){
   //Settings Matrix
   matrix.begin();
-  matrix.setShiftDataInCallback(scrollDataSource);
-  matrix.setShiftDataOutCallback(scrollDataSink);
-  matrixThread.onRun(displayMessage);
-  matrixThread.setInterval(scrollDelay);
+  matrix.setInvert(false);
+  matrix.displayClear();
+  matrix.displaySuspend(false);
+  matrix.setPause(PAUSE_TIME);
+  matrix.setFont(ExtASCII);
+  matrix.displayScroll(curMessage, PA_LEFT, scrollEffect, frameDelay);
+}
+
+void matrixUpdate(){
+    if (matrix.displayAnimate())
+    {
+      if (newMessageAvailable)
+      {
+        strcpy(curMessage, newMessage);
+        newMessageAvailable = false;
+      }
+      matrix.displayReset();
+  }
+}
+
+/*
+String removeNonAscii(String message){
+  String buffer = "";
+  bool non_ascii = false;
+  for(int character = 0;character < message.length();character++){
+    Serial.println(message[character], DEC);
+    if(message[character] > 255){
+      Serial.println("NON EXTENDED ASCII DETECTED");
+    } else {
+      buffer = buffer + message[character];
+    }
+  }
+  return buffer;
+}
+*/
+
+//https://playground.arduino.cc/Main/Utf8ascii/
+
+byte utf8ascii(byte ascii) {
+    if ( ascii<128 )   // Standard ASCII-set 0..0x7F handling
+    {   c1=0;
+        Serial.print("STANDARD:");
+        Serial.println(ascii, DEC);
+        return( ascii );
+    }
+
+    // get previous input
+    byte last = c1;   // get last char
+    c1=ascii;         // remember actual character
+    Serial.println("NON STANDARD:");
+    Serial.println(c1, DEC);
+    switch (last)     // conversion depending on first UTF8-character
+    {   case 0xC2: return  (ascii);  break;
+        case 0xC3: return  (ascii | 0xC0);  break;
+        case 0x82: if(ascii==0xAC) return(0x80);       // special case Euro-symbol
+    }
+
+    return  (0);                                     // otherwise: return zero, if character has to be ignored
+}
+
+// convert String object from UTF8 String to Extended ASCII
+String utf8ascii(String s)
+{      
+        String r="";
+        char c;
+        for (int i=0; i<s.length(); i++)
+        {
+                c = utf8ascii(s.charAt(i));
+                if (c!=0) r+=c;
+        }
+        return r;
+}
+
+// In Place conversion UTF8-string to Extended ASCII (ASCII is shorter!)
+void utf8ascii(char* s)
+{
+        int k=0;
+        char c;
+        for (int i=0; i<strlen(s); i++)
+        {
+                c = utf8ascii(s[i]);
+                if (c!=0)
+                        s[k++]=c;
+        }
+        s[k]=0;
+}
+
+void matrixText(String message){
+  //message = removeNonAscii(message);
+  message = ' ' + message;
+  message = utf8ascii(message);
+  strcpy(newMessage, message.c_str());
+  newMessageAvailable = true;
+  Serial.println("--> Message " + message);
 }

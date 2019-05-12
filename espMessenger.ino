@@ -8,6 +8,7 @@
   Library required:
   --> Arduino Thread
   --> MD_MAX72xx
+  --> MD_Parola
   --> ArduinoJSON (v6)
 */
 // Global message buffers shared by Serial and Scrolling functions
@@ -30,17 +31,13 @@ void setup() {
     connect();  //Connect to WiFi (or create Accesss Point)
     webStart(); //Start WebServer
   }
-
-  strcpy(curMessage, WiFi.localIP().toString().c_str());
+  matrixText(WiFi.localIP().toString());
 }
 
 void loop() {
   if(settings_state){ // Check if settings was performs correctly or do nothing
     server.handleClient(); //Manage Web Server
     MDNS.update(); // Manage Bonjour Name (textmatrix.local by default)
-
-    if(matrixThread.shouldRun()){
-      matrixThread.run(); //Manage Message Routine
-    }
   }
+  matrixUpdate();
 }

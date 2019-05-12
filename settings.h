@@ -80,7 +80,7 @@ bool checkSettings(){
 }
 
 bool readSettings(){
-  Serial.println("... [OK] Reading settings");
+  Serial.println("... [SETTINGS] Opening settings.json ...");
   File file = SPIFFS.open(settings_file, "r");
   StaticJsonDocument<2048> doc;
   DeserializationError error = deserializeJson(doc, file);

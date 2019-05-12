@@ -15,12 +15,11 @@ void setHostname(){
     NBNS.begin(name);
     LLMNR.begin(name);
     Serial.print("--> Name: ");
-    Serial.print(name);
+    Serial.println(name);
 }
 
 bool checkSSID(){
   int n = WiFi.scanNetworks();
-  Serial.println("Checking for network");
   if (n == 0){
     return false;
   }
@@ -48,14 +47,16 @@ void connect(){
       network.addAP(ssid4,pass4);
       while (network.run() != WL_CONNECTED){
       }
-      Serial.print("--> Network Mode : ");
+      Serial.print("--> SSID : ");
       Serial.println(WiFi.SSID());
+      Serial.print("--> IP : ");
       Serial.println(WiFi.localIP());
     } else {
       WiFi.mode(WIFI_AP);
       WiFi.softAP(ap_ssid,ap_pass);
-      Serial.print("--> Access Point Mode : ");
+      Serial.print("--> SSID : ");
       Serial.println(WiFi.softAPIP());
+      Serial.println("--> IP : 192.168.4.1");
     }
     setHostname();
 }
