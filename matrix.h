@@ -9,7 +9,7 @@
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define MAX_DEVICES 4
 #define CHAR_SPACING  1 // pixels between characters
-#define BUF_SIZE  1024
+#define BUF_SIZE  2048
 
 char curMessage[BUF_SIZE];
 char * newMessage = " ";
