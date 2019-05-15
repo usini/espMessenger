@@ -4,7 +4,6 @@
 #include <ESP8266NetBIOS.h>
 #include <ESP8266SSDP.h>
 #include <ESP8266WebServer.h>
-#include <ESP8266LLMNR.h>
 
 ESP8266WiFiMulti network;
 bool connection = false;
@@ -13,7 +12,6 @@ void setHostname(){
     MDNS.begin(name);
     MDNS.addService("http","tcp", 80);
     NBNS.begin(name);
-    LLMNR.begin(name);
     Serial.print("--> Name: ");
     Serial.println(name);
 }
@@ -60,4 +58,3 @@ void connect(){
     }
     setHostname();
 }
-

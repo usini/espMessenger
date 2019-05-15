@@ -1,66 +1,59 @@
-#include "Adafruit_MQTT.h"
-#include "Adafruit_MQTT_Client.h"
+#include <PubSubClient.h>
 
-#define AIO_SERVER      "192.168.0.141"
-#define AIO_SERVERPORT  1883
-#define AIO_USERNAME    "user"
-#define AIO_KEY         "key"
+//TODO Make it changeable
+#define MQTT_SERVER      "192.168.0.141"
+#define MQTT_SERVERPORT  1883
+#define MQTT_USERNAME    "user"
+#define MQTT_KEY         "key"
 const char * topic = "ledmatrix/message";
+
 // Create an ESP8266 WiFiClient class to connect to the MQTT server.
-WiFiClient client;
+WiFiClient espClient;
+PubSubClient mqttClient(espClient);
 
-// MQTT No Login
-Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT);
-Adafruit_MQTT_Subscribe mqttMatrix = Adafruit_MQTT_Subscribe(&mqtt, topic);
+// TODO
 // MQTT Password
-//  Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_USERNAME, AIO_KEY);
-
-
 // MQTTS No Login
-
 // MQTTS Password
 
-void mqttTextReceived(char *data, uint16_t len){
-  matrixText(String(data));
-}
+void mqttTextReceived(char* topic, byte* payload, unsigned int length) {
+  Serial.print("MQTT --> ");
+  char payloadChar[1024];
 
-void mqttStart(){
-    mqttMatrix.setCallback(mqttTextReceived);
-    mqtt.subscribe(&mqttMatrix);
-}
-
-void MQTT_connect() {
-  int8_t ret;
-
-  // Stop if already connected.
-  if (mqtt.connected()) {
-    return;
+  int k = 0;
+  char c;
+  for (int i = 0; i < length; i++)
+  {
+    c = payload[i];
+    Serial.println(c);
+    payloadChar[k++] = payload[i];
   }
+  Serial.println(payloadChar);
+  matrixText(payloadChar);
+}
 
-  Serial.print("[MQTT] Connecting ... ");
+void mqttStart() {
+  Serial.println("... [MQTT] Starting MQTT Server");
+  randomSeed(micros());
+  mqttClient.setServer(MQTT_SERVER, MQTT_SERVERPORT);
+  mqttClient.setCallback(mqttTextReceived);
+}
 
-  uint8_t retries = 3;
-  while ((ret = mqtt.connect()) != 0) { // connect will return 0 for connected
-    Serial.println(mqtt.connectErrorString(ret));
-    Serial.println("[MQTT] Retrying MQTT in 5 seconds...");
-    mqtt.disconnect();
-    delay(5000);  // wait 5 seconds
-    retries--;
-    if (retries == 0) {
-      // basically die and wait for WDT to reset me
-      Serial.println("[MQTT] No connection");
+void mqttUpdate() {
+  if (!mqttClient.connected()) {
+    while (!mqttClient.connected()) {
+      String clientId = "ESP8266Client-";
+      clientId += String(random(0xffff), HEX);
+
+      if (mqttClient.connect(clientId.c_str())) {
+        Serial.println("... [MQTT] Connected");
+        mqttClient.subscribe(topic);
+      } else {
+        Serial.println("... [MQTT] Connection...");
+        delay(1000);
+      }
     }
-  }
-  Serial.println("MQTT Connected!");
-}
-
-void mqttUpdate(){
-  MQTT_connect();
-  mqtt.processPackets(10000); //Check for message
-
-  if(! mqtt.ping()) {
-    mqtt.disconnect();
+  } else {
+    mqttClient.loop();
   }
 }
-
-

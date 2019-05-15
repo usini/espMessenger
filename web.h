@@ -49,14 +49,17 @@ void webMessage() {
     StaticJsonDocument<2048> doc;
     DeserializationError error = deserializeJson(doc, server.arg("plain"));
     if (error) {
-      Serial.print("[MESSAGE] : Deserialize Json failed");
+      Serial.println("[MESSAGE] : Deserialize Json failed");
       //String error_string = "{\"error\": \"" + String(error) + "\"}";
       server.send(200, "text/json", "error");
       return;
+    } else {
+      Serial.print("--> WEB : ");
+      String serialMessage = doc["message"].as<String>();
+      Serial.println(serialMessage);
+      matrixText((char *)doc["message"].as<char*>());
+      server.send(200, "text/json", doc["message"]);
     }
-
-    matrixText(doc["message"].as<String>());
-    server.send(200, "text/json", doc["message"]);
   }
 }
 
