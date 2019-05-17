@@ -33,7 +33,7 @@ void setup() {
     matrixText("WiFi");
     connect();  // Connect to WiFi (or create Accesss Point)
     webStart(); // Start WebServer
-    mqttStart(); //Start MQTT Client
+    //mqttStart(); //Start MQTT Client
   }
   char ip[100];
   String ipString = WiFi.localIP().toString();
@@ -44,7 +44,7 @@ void setup() {
 void loop() {
   if(settings_state){ // Check if settings was performs correctly or do nothing
     server.handleClient(); //Manage Web Server
-    mqttUpdate();
+    //mqttUpdate();
     MDNS.update(); // Manage Bonjour Name (textmatrix.local by default)
   }
 }

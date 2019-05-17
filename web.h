@@ -41,6 +41,14 @@ void webReboot() {
   ESP.restart();
 }
 
+void webName(){
+  server.send(200, "text/plain", name);
+}
+
+void webUpdate(){
+
+}
+
 // Display Message on Led Matrix
 void webMessage() {
   if(server.hasArg("plain") == false){
@@ -72,6 +80,7 @@ void webStart() {
     server.on("/save",webSaveSettings); //Send Settings to SPIFFS (json)
     server.on("/load",webLoadSettings); //Load Settings from SPIFFS (json)
     server.on("/reboot",webReboot); //Reboot ESP
+    server.on("/name",webName);
     server.on("/description.xml", HTTP_GET, []() {
       SSDP.schema(server.client());
     });
