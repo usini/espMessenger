@@ -48,7 +48,7 @@ void initMatrix() {
   matrix.setPause(PAUSE_TIME);
   matrix.setFont(ExtASCII);
   matrix.displayScroll(curMessage, PA_LEFT, scrollEffect, frameDelay);
-  matrixManager.attach_ms(5, matrixUpdate);
+  matrixManager.attach_ms(10, matrixUpdate);
 }
 
 
@@ -103,7 +103,7 @@ char* utf8ascii(char* s) {
 void matrixText(char *message) {
   if (strlen(message) <= CHAR_LIMIT ) {
     message = utf8ascii(message);
-    Serial.println(strlen(message));
+    //Serial.println(strlen(message));
     strcpy(newMessage, message);
     newMessageAvailable = true;
     Serial.print("--> Message : ");
