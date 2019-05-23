@@ -43,7 +43,7 @@ void setup() {
 
 void loop() {
   if(settings_state){ // Check if settings was performs correctly or do nothing
-    server.handleClient(); //Manage Web Server
+    webUpdate();
     //mqttUpdate();
     MDNS.update(); // Manage Bonjour Name (textmatrix.local by default)
   }

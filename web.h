@@ -1,7 +1,14 @@
 #include "web/web_index.h"
 #include "web/web_settings.h"
-
+#include <ESP8266WebServer.h>
+#include <ESP8266WebServerSecure.h>
+#include <FS.h>
 ESP8266WebServer server(80); //Web Server on port 80
+BearSSL::ESP8266WebServerSecure server_ssl(443);
+
+const char *web_cert_file = "/webcert.pem";
+const char *web_key_file = "/webkey.pem";
+bool isWebSSL = false;
 
 // Display index.html (/)
 void webIndex() {
@@ -35,6 +42,30 @@ void webLoadSettings() {
   file.close();
   server.send(200, "text/json", settings_json);
 }
+/*
+void webUploadFile(){
+  HTTPUpload& upload = server.upload();
+  if (upload.status == UPLOAD_FILE_START) {
+    String filename = upload.filename;
+    if (!filename.startsWith("/")) {
+      filename = "/" + filename;
+    }
+    fsUploadFile = SPIFFS.open(filename, "w");
+    filename = String();
+  } else if (upload.status == UPLOAD_FILE_WRITE) {
+    //DBG_OUTPUT_PORT.print("handleFileUpload Data: "); DBG_OUTPUT_PORT.println(upload.currentSize);
+    if (fsUploadFile) {
+      fsUploadFile.write(upload.buf, upload.currentSize);
+    }
+  } else if (upload.status == UPLOAD_FILE_END) {
+    if (fsUploadFile) {
+      fsUploadFile.close();
+    }
+}
+*/
+void webPing(){
+  server.send(200, "text/plain", "1");
+}
 
 // Restart ESP
 void webReboot() {
@@ -45,9 +76,7 @@ void webName(){
   server.send(200, "text/plain", name);
 }
 
-void webUpdate(){
 
-}
 
 // Display Message on Led Matrix
 void webMessage() {
@@ -71,21 +100,75 @@ void webMessage() {
   }
 }
 
+void webRedirect(){
+  server.send(200,"Redirection");
+}
+
+void webCheckCerts(){
+    File file = SPIFFS.open(web_cert_file, "r");
+    String web_cert;
+    if(file){
+      String web_cert;
+      while (file.available()){
+        web_cert += char(file.read());
+      }
+      file.close();
+      isWebSSL = true;
+    }
+    if(isWebSSL){
+      file = SPIFFS.open(web_key_file, "r");
+      String web_key;
+      while (file.available()){
+        web_key += char(file.read());
+      }
+      file.close();
+      isWebSSL = true;
+    } else {
+      isWebSSL = false;
+    }
+}
+
+void webUpdate(){
+   server.handleClient(); //Manage Web Server
+  if(isWebSSL){
+    server_ssl.handleClient();
+  }
+}
+
 //Generate endpoints
 void webStart() {
     Serial.println("... [WEB] Starting web server .. ");
-    server.on("/",webIndex); //Display main Page
-    server.on("/message",webMessage); //Send Message (json)
-    server.on("/settings",webSettings); //Display Settings page
-    server.on("/save",webSaveSettings); //Send Settings to SPIFFS (json)
-    server.on("/load",webLoadSettings); //Load Settings from SPIFFS (json)
-    server.on("/reboot",webReboot); //Reboot ESP
-    server.on("/name",webName);
-    server.on("/description.xml", HTTP_GET, []() {
-      SSDP.schema(server.client());
-    });
-    server.begin();
+    webCheckCerts();
+    if(isWebSSL){
+      server_ssl.on("/",webIndex); //Display main Page
+      server_ssl.on("/message",webMessage); //Send Message (json)
+      server_ssl.on("/settings",webSettings); //Display Settings page
+      server_ssl.on("/save",webSaveSettings); //Send Settings to SPIFFS (json)
+      server_ssl.on("/load",webLoadSettings); //Load Settings from SPIFFS (json)
+      server_ssl.on("/reboot",webReboot); //Reboot ESP
+      server_ssl.on("/ping", webPing);
+      server_ssl.on("/name",webName);
+      server.on("/description.xml", HTTP_GET, []() {
+        SSDP.schema(server.client());
+      });
+      server.on("/",webRedirect);
+      server.begin();
+      server_ssl.begin();
 
+    } else {
+      server.on("/",webIndex); //Display main Page
+      server.on("/message",webMessage); //Send Message (json)
+      server.on("/settings",webSettings); //Display Settings page
+      server.on("/save",webSaveSettings); //Send Settings to SPIFFS (json)
+      server.on("/load",webLoadSettings); //Load Settings from SPIFFS (json)
+      server.on("/reboot",webReboot); //Reboot ESP
+      server.on("/ping", webPing);
+      server.on("/name",webName);
+      server.on("/description.xml", HTTP_GET, []() {
+        SSDP.schema(server.client());
+      });
+      server.begin();
+    }
     //Simple Service Discovery Protocol : Display ESP in Windows Network Tab
     SSDP.setSchemaURL("description.xml");
     SSDP.setHTTPPort(80);
@@ -95,7 +178,7 @@ void webStart() {
     SSDP.setURL("/");
     SSDP.setModelName("ESP Messenger");
     SSDP.setModelNumber("0000000000001");
-    SSDP.setModelURL("http://usini.eu/espmessenger");
+    SSDP.setModelURL("https://github.com/maditnerd/espMessenger");
     SSDP.setManufacturer("Usini");
     SSDP.setManufacturerURL("http://usini.eu");
     SSDP.begin();

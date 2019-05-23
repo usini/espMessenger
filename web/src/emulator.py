@@ -1,13 +1,19 @@
 from bottle import route, post, run, template, static_file, request
 import json
+import time
 #http://bottlepy.org/docs/dev/tutorial.html#generating-content
 
 @route('/')
 def index():
     return static_file("index.html","./")
 
+@route('/ping')
+def webPing():
+    return "1"
+
 @post('/message')
 def webMessage():
+    time.sleep(1)
     return request.body
 
 @route('/settings')

@@ -1,6 +1,6 @@
 #include <MD_Parola.h>  //Led Matrix Library (advanced)
 #include <MD_MAX72xx.h> //Led Matrix Library (basic)
-#include "Parola_Fonts_data.h" //Ascii Extended Font
+#include "fonts/Parola_Fonts_data.h" //Ascii Extended Font
 #include <Ticker.h> //Parralel Manager
 
 #define CLK_PIN   D5  // or SCK
