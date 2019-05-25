@@ -36,7 +36,12 @@ void setup() {
     //mqttStart(); //Start MQTT Client
   }
   char ip[100];
-  String ipString = WiFi.localIP().toString();
+  String ipString;
+  if(ap){
+  ipString = WiFi.localIP().toString();
+  } else {
+  ipString = WiFi.softAPIP().toString();
+  }
   ipString.toCharArray(ip, sizeof(ip));
   matrixText(ip); //Todo hostname or IP for Access Point
 }

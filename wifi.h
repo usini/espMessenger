@@ -6,6 +6,7 @@
 
 ESP8266WiFiMulti network;
 bool connection = false;
+bool ap = false;
 
 void setHostname(){
     MDNS.begin(name);
@@ -20,6 +21,10 @@ bool checkSSID(){
   if (n == 0){
     return false;
   }
+  Serial.println(ssid1);
+  Serial.println(ssid2);
+  Serial.println(ssid3);
+  Serial.println(ssid4);
   for (int i = 0; i < n; i++){
     if(WiFi.SSID(i) == ssid1)
       return true;
@@ -36,7 +41,10 @@ bool checkSSID(){
 //Try to connect to ssid, if fail connect to AP.
 void connect(){
   Serial.println("... [WIFI] Connection ...");
+  configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
     if(checkSSID()){
+      ap = true;
+      Serial.println("... [WIFI] Network founded ... ");
       WiFi.mode(WIFI_STA);
       network.addAP(ssid1,pass1);
       network.addAP(ssid2,pass2);
@@ -49,6 +57,8 @@ void connect(){
       Serial.print("--> IP : ");
       Serial.println(WiFi.localIP());
     } else {
+      ap = false;
+      Serial.println("... [WIFI] No Network founded ... ");
       WiFi.mode(WIFI_AP);
       WiFi.softAP(ap_ssid,ap_pass);
       Serial.print("--> SSID : ");

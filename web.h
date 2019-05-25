@@ -12,23 +12,40 @@ bool isWebSSL = false;
 
 // Display index.html (/)
 void webIndex() {
-  server.send(200, "text/html", HTTP_INDEX);
+  if(isWebSSL){
+    Serial.println("Sending SSL Index");
+    server_ssl.send(200, "text/html", HTTP_INDEX);
+  } else {
+    server.send(200, "text/html", HTTP_INDEX);
+  }
 }
 
 // Display settings.html (/settings)
 void webSettings() {
-  server.send(200, "text/html", HTTP_SETTINGS);
+  if(isWebSSL){
+  server_ssl.send(200, "text/html", HTTP_SETTINGS);
+  } else {
+    server.send(200, "text/html", HTTP_SETTINGS);
+  }
 }
 
 // Copy body request into settings.json (/save)
 void webSaveSettings() {
   if(server.hasArg("plain") == false){
-    server.send(200, "text/html", "no message");
+    if(isWebSSL){
+      server.send(200, "text/html", "no message");
+    } else {
+      server_ssl.send(200, "text/html", "no message");
+    }
   } else {
     File file = SPIFFS.open(settings_file,"w");
     file.println(server.arg("plain"));
     file.close();
-    server.send(200, "text/json", server.arg("plain"));
+    if(isWebSSL){
+      server_ssl.send(200, "text/json", server.arg("plain"));
+    } else {
+      server.send(200, "text/json", server.arg("plain"));
+    }
   }
 }
 
@@ -40,7 +57,11 @@ void webLoadSettings() {
     settings_json += char(file.read());
   }
   file.close();
-  server.send(200, "text/json", settings_json);
+  if(isWebSSL){
+    server_ssl.send(200, "text/json", settings_json);
+  } else {
+    server.send(200, "text/json", settings_json);
+  }
 }
 /*
 void webUploadFile(){
@@ -64,7 +85,11 @@ void webUploadFile(){
 }
 */
 void webPing(){
-  server.send(200, "text/plain", "1");
+  if(isWebSSL){
+    server_ssl.send(200, "text/plain", "1");
+  } else {
+    server.send(200, "text/plain", "1");
+  }
 }
 
 // Restart ESP
@@ -73,42 +98,65 @@ void webReboot() {
 }
 
 void webName(){
-  server.send(200, "text/plain", name);
+  if(isWebSSL){
+    server_ssl.send(200, "text/plain", name);
+  } else {
+    server.send(200, "text/plain", name);
+  }
 }
-
-
 
 // Display Message on Led Matrix
 void webMessage() {
   if(server.hasArg("plain") == false){
-    server.send(200, "text/html", "no message");
+    if(isWebSSL){
+      server_ssl.send(200, "text/html", "no message");
+    } else {
+      server.send(200, "text/html", "no message");
+    }
   } else {
     StaticJsonDocument<2048> doc;
     DeserializationError error = deserializeJson(doc, server.arg("plain"));
     if (error) {
       Serial.println("[MESSAGE] : Deserialize Json failed");
       //String error_string = "{\"error\": \"" + String(error) + "\"}";
-      server.send(200, "text/json", "error");
+      if(isWebSSL){
+        server_ssl.send(200, "text/json", "error");
+      } else {
+        server.send(200, "text/json", "error");
+      }
       return;
     } else {
       Serial.print("--> WEB : ");
       String serialMessage = doc["message"].as<String>();
       Serial.println(serialMessage);
       matrixText((char *)doc["message"].as<char*>());
-      server.send(200, "text/json", doc["message"]);
+      if(isWebSSL){
+        server_ssl.send(200, "text/json", doc["message"]);
+      } else {
+        server.send(200, "text/json", doc["message"]);
+      }
     }
   }
 }
 
+//TODO Captive Portal
+
 void webRedirect(){
-  server.send(200,"Redirection");
+    if(ap){
+      server.sendHeader("Location", String("https://") + WiFi.localIP().toString(), true);
+    } else {
+      server.sendHeader("Location", String("https://") + WiFi.softAPIP().toString(), true);
+    }
+    server.send(302, "text/plain", "");   // Empty content inhibits Content-length header so we have to close the socket ourselves.
+    server.client().stop(); // Stop is needed because we sent no content length
 }
 
 void webCheckCerts(){
     File file = SPIFFS.open(web_cert_file, "r");
     String web_cert;
+    String web_key;
     if(file){
-      String web_cert;
+      Serial.println("... [CERTS] Reading web cert ...");
       while (file.available()){
         web_cert += char(file.read());
       }
@@ -116,8 +164,8 @@ void webCheckCerts(){
       isWebSSL = true;
     }
     if(isWebSSL){
+      Serial.println("... [CERTS] Reading web key ...");
       file = SPIFFS.open(web_key_file, "r");
-      String web_key;
       while (file.available()){
         web_key += char(file.read());
       }
@@ -126,6 +174,7 @@ void webCheckCerts(){
     } else {
       isWebSSL = false;
     }
+    server_ssl.setRSACert(new BearSSL::X509List(web_cert.c_str()), new BearSSL::PrivateKey(web_key.c_str()));
 }
 
 void webUpdate(){
@@ -140,6 +189,7 @@ void webStart() {
     Serial.println("... [WEB] Starting web server .. ");
     webCheckCerts();
     if(isWebSSL){
+      Serial.println("... [WEB] Secured website enable ...");
       server_ssl.on("/",webIndex); //Display main Page
       server_ssl.on("/message",webMessage); //Send Message (json)
       server_ssl.on("/settings",webSettings); //Display Settings page
