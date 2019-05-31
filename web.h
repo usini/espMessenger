@@ -2,6 +2,7 @@
 #include "web/web_settings.h"
 #include <ESP8266WebServer.h>
 #include <ESP8266WebServerSecure.h>
+#include <ESP8266SSDP.h>
 #include <FS.h>
 ESP8266WebServer server(80); //Web Server on port 80
 BearSSL::ESP8266WebServerSecure server_ssl(443);
@@ -14,18 +15,22 @@ bool isWebSSL = false;
 void webIndex() {
   if(isWebSSL){
     Serial.println("Sending SSL Index");
-    server_ssl.send(200, "text/html", HTTP_INDEX);
+    server_ssl.sendHeader("content-encoding","gzip");
+    server_ssl.send_P(200, "text/html", HTTP_INDEX, sizeof(HTTP_INDEX));
   } else {
-    server.send(200, "text/html", HTTP_INDEX);
+        server.sendHeader("content-encoding","gzip");
+    server.send_P(200, "text/html", HTTP_INDEX, sizeof(HTTP_INDEX));
   }
 }
 
 // Display settings.html (/settings)
 void webSettings() {
   if(isWebSSL){
-  server_ssl.send(200, "text/html", HTTP_SETTINGS);
+  server_ssl.sendHeader("content-encoding","gzip");
+    server_ssl.send_P(200, "text/html", HTTP_SETTINGS, sizeof(HTTP_SETTINGS));
   } else {
-    server.send(200, "text/html", HTTP_SETTINGS);
+    server.sendHeader("content-encoding","gzip");
+    server.send_P(200, "text/html", HTTP_SETTINGS, sizeof(HTTP_SETTINGS));
   }
 }
 
@@ -63,27 +68,7 @@ void webLoadSettings() {
     server.send(200, "text/json", settings_json);
   }
 }
-/*
-void webUploadFile(){
-  HTTPUpload& upload = server.upload();
-  if (upload.status == UPLOAD_FILE_START) {
-    String filename = upload.filename;
-    if (!filename.startsWith("/")) {
-      filename = "/" + filename;
-    }
-    fsUploadFile = SPIFFS.open(filename, "w");
-    filename = String();
-  } else if (upload.status == UPLOAD_FILE_WRITE) {
-    //DBG_OUTPUT_PORT.print("handleFileUpload Data: "); DBG_OUTPUT_PORT.println(upload.currentSize);
-    if (fsUploadFile) {
-      fsUploadFile.write(upload.buf, upload.currentSize);
-    }
-  } else if (upload.status == UPLOAD_FILE_END) {
-    if (fsUploadFile) {
-      fsUploadFile.close();
-    }
-}
-*/
+
 void webPing(){
   if(isWebSSL){
     server_ssl.send(200, "text/plain", "1");

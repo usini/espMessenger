@@ -2,7 +2,7 @@
 #include <ESP8266WiFiMulti.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266NetBIOS.h>
-#include <ESP8266SSDP.h>
+
 
 ESP8266WiFiMulti network;
 bool connection = false;
