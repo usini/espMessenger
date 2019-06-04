@@ -39,6 +39,18 @@ def webName():
 def webLoad():
     return static_file("settings.json","./")
 
+@route('/style.css')
+def style():
+    return static_file("style.css","./")
+
+@route('/toast.min.js')
+def toast_script():
+    return static_file("toast.min.js","./")
+
+@route('/script.js')
+def script():
+    return static_file("script.js","./")
+
 @route('/reboot')
 def webReboot():
     return template("Rebooting")

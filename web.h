@@ -1,5 +1,9 @@
 #include "web/web_index.h"
 #include "web/web_settings.h"
+#include "web/web_script.h"
+#include "web/web_style.h"
+#include "web/web_toast.h"
+
 #include <ESP8266WebServer.h>
 #include <ESP8266WebServerSecure.h>
 #include <ESP8266SSDP.h>
@@ -11,8 +15,23 @@ const char *web_cert_file = "/webcert.pem";
 const char *web_key_file = "/webkey.pem";
 bool isWebSSL = false;
 
+void webAuth(){
+  if(isWebSSL){
+    if (!server_ssl.authenticate(web_user, web_pass)) {
+      Serial.println(web_user);
+      Serial.println(web_pass);
+      return server_ssl.requestAuthentication();
+    }
+  } else {
+    if (!server.authenticate(web_user, web_pass)) {
+      return server.requestAuthentication();
+    }
+  }
+}
+
 // Display index.html (/)
 void webIndex() {
+  webAuth();
   if(isWebSSL){
     Serial.println("Sending SSL Index");
     server_ssl.sendHeader("content-encoding","gzip");
@@ -25,9 +44,10 @@ void webIndex() {
 
 // Display settings.html (/settings)
 void webSettings() {
+  webAuth();
   if(isWebSSL){
   server_ssl.sendHeader("content-encoding","gzip");
-    server_ssl.send_P(200, "text/html", HTTP_SETTINGS, sizeof(HTTP_SETTINGS));
+  server_ssl.send_P(200, "text/html", HTTP_SETTINGS, sizeof(HTTP_SETTINGS));
   } else {
     server.sendHeader("content-encoding","gzip");
     server.send_P(200, "text/html", HTTP_SETTINGS, sizeof(HTTP_SETTINGS));
@@ -36,6 +56,7 @@ void webSettings() {
 
 // Copy body request into settings.json (/save)
 void webSaveSettings() {
+  webAuth();
   if(server.hasArg("plain") == false){
     if(isWebSSL){
       server.send(200, "text/html", "no message");
@@ -56,6 +77,7 @@ void webSaveSettings() {
 
 // Load settings.json and display it
 void webLoadSettings() {
+  webAuth();
   File file = SPIFFS.open(settings_file, "r");
   String settings_json;
   while (file.available()){
@@ -79,10 +101,12 @@ void webPing(){
 
 // Restart ESP
 void webReboot() {
+  webAuth();
   ESP.restart();
 }
 
 void webName(){
+  webAuth();
   if(isWebSSL){
     server_ssl.send(200, "text/plain", name);
   } else {
@@ -92,15 +116,32 @@ void webName(){
 
 // Display Message on Led Matrix
 void webMessage() {
-  if(server.hasArg("plain") == false){
-    if(isWebSSL){
+  webAuth();
+  bool isMessage = false;
+  
+  // Check if message exists
+  if(isWebSSL){ // SSL
+    if(server_ssl.hasArg("plain") == false){
       server_ssl.send(200, "text/html", "no message");
     } else {
-      server.send(200, "text/html", "no message");
+      isMessage = true;
     }
-  } else {
+  } else { // NON SSL
+    if(server.hasArg("plain") == false){
+      server.send(200, "text/html", "no message");
+    } else {
+      isMessage = true;
+    }
+  }
+
+  if(isMessage){
     StaticJsonDocument<2048> doc;
-    DeserializationError error = deserializeJson(doc, server.arg("plain"));
+    DeserializationError error;
+    if(isWebSSL){
+      error = deserializeJson(doc, server_ssl.arg("plain"));
+    } else {
+      error = deserializeJson(doc, server.arg("plain"));
+    }
     if (error) {
       Serial.println("[MESSAGE] : Deserialize Json failed");
       //String error_string = "{\"error\": \"" + String(error) + "\"}";
@@ -169,6 +210,39 @@ void webUpdate(){
   }
 }
 
+void webStyle(){
+  webAuth();
+  if(isWebSSL){
+  server_ssl.sendHeader("content-encoding","gzip");
+  server_ssl.send_P(200, "text/html", HTTP_STYLE, sizeof(HTTP_STYLE));
+  } else {
+    server.sendHeader("content-encoding","gzip");
+    server.send_P(200, "text/html", HTTP_STYLE, sizeof(HTTP_STYLE));
+  }
+}
+
+void webToast(){
+  webAuth();
+  if(isWebSSL){
+  server_ssl.sendHeader("content-encoding","gzip");
+  server_ssl.send_P(200, "text/html", HTTP_TOAST, sizeof(HTTP_TOAST));
+  } else {
+    server.sendHeader("content-encoding","gzip");
+    server.send_P(200, "text/html", HTTP_TOAST, sizeof(HTTP_TOAST));
+  }
+}
+
+void webScript(){
+  webAuth();
+  if(isWebSSL){
+  server_ssl.sendHeader("content-encoding","gzip");
+  server_ssl.send_P(200, "text/html", HTTP_SCRIPT, sizeof(HTTP_SCRIPT));
+  } else {
+    server.sendHeader("content-encoding","gzip");
+    server.send_P(200, "text/html", HTTP_SCRIPT, sizeof(HTTP_SCRIPT));
+  }
+}
+
 //Generate endpoints
 void webStart() {
     Serial.println("... [WEB] Starting web server .. ");
@@ -183,6 +257,9 @@ void webStart() {
       server_ssl.on("/reboot",webReboot); //Reboot ESP
       server_ssl.on("/ping", webPing);
       server_ssl.on("/name",webName);
+      server_ssl.on("/style.css",webStyle);
+      server_ssl.on("/toast.min.js",webToast);
+      server_ssl.on("/script.js",webScript);
       server.on("/description.xml", HTTP_GET, []() {
         SSDP.schema(server.client());
       });
@@ -199,6 +276,10 @@ void webStart() {
       server.on("/reboot",webReboot); //Reboot ESP
       server.on("/ping", webPing);
       server.on("/name",webName);
+      server.on("/style.css",webStyle);
+      server.on("/toast.min.js",webToast);
+      server.on("/script.js",webScript);
+
       server.on("/description.xml", HTTP_GET, []() {
         SSDP.schema(server.client());
       });

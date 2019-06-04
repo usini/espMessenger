@@ -1,20 +1,20 @@
 #include <ArduinoJson.h>
 #include "FS.h"
 
-const String DEFAULT_SSID1 = "";
-const String DEFAULT_PASS1 = "";
-const String DEFAULT_SSID2 = "";
-const String DEFAULT_PASS2 = "";
-const String DEFAULT_SSID3 = "";
-const String DEFAULT_PASS3 = "";
-const String DEFAULT_SSID4 = "";
-const String DEFAULT_PASS4 = "";
-const String DEFAULT_NAME = "textmatrix";
+const char* DEFAULT_SSID1 = "";
+const char* DEFAULT_PASS1 = "";
+const char* DEFAULT_SSID2 = "";
+const char* DEFAULT_PASS2 = "";
+const char* DEFAULT_SSID3 = "";
+const char* DEFAULT_PASS3 = "";
+const char* DEFAULT_SSID4 = "";
+const char* DEFAULT_PASS4 = "";
+const char* DEFAULT_NAME = "textmatrix";
 
-const String DEFAULT_AP_SSID = "textmatrix";
-const String DEFAULT_AP_PASS = "textmatrix";
-const String DEFAULT_WEB_USER = "textmatrix";
-const String DEFAULT_WEB_PASS = "textmatrix";
+const char* DEFAULT_AP_SSID = "textmatrix";
+const char* DEFAULT_AP_PASS = "textmatrix";
+const char* DEFAULT_WEB_USER = "textmatrix";
+const char* DEFAULT_WEB_PASS = "textmatrix";
 
 const char* ssid1;
 const char* pass1;
@@ -28,8 +28,8 @@ const char* ap_ssid;
 const char* ap_pass;
 const char* name;
 
-String web_user;
-String web_pass;
+const char* web_user;
+const char* web_pass;
 
 const char *settings_file = "/settings.json";
 bool settings_state = false;
@@ -113,8 +113,8 @@ bool readSettings(){
   ap_ssid = settings["ap_ssid"].as<char*>();
   ap_pass = settings["ap_pass"].as<char*>();
   name = settings["name"].as<char*>();
-  web_user = settings["web_user"].as<String>();
-  web_pass = settings["web_pass"].as<String>();
+  web_user = settings["web_user"].as<char*>();
+  web_pass = settings["web_pass"].as<char*>();
   file.close();
   return true;
 }
