@@ -1,13 +1,24 @@
+/* Web Manager
+  By Rémi Sarrailh <@m4dnerd>
+  Licence : MIT
+*/
+
+// Static Web File
 #include "web/web_index.h"
 #include "web/web_settings.h"
 #include "web/web_script.h"
 #include "web/web_style.h"
 #include "web/web_toast.h"
 
-#include <ESP8266WebServer.h>
-#include <ESP8266WebServerSecure.h>
-#include <ESP8266SSDP.h>
-#include <FS.h>
+#include <ESP8266WebServer.h> //Library for WebServer
+#include <ESP8266WebServerSecure.h> //Library for WebServer (SSL)
+#include <ESP8266SSDP.h> //Library for SSDP (Show ESP in Network on Windows)
+#include <FS.h> //Library for FileSystem
+
+//TODO Captive Portal
+
+File fsUploadFile;
+
 ESP8266WebServer server(80); //Web Server on port 80
 BearSSL::ESP8266WebServerSecure server_ssl(443);
 
@@ -15,21 +26,28 @@ const char *web_cert_file = "/webcert.pem";
 const char *web_key_file = "/webkey.pem";
 bool isWebSSL = false;
 
+// Basic Authentication
 void webAuth(){
-  if(isWebSSL){
-    if (!server_ssl.authenticate(web_user, web_pass)) {
-      Serial.println(web_user);
-      Serial.println(web_pass);
-      return server_ssl.requestAuthentication();
-    }
-  } else {
-    if (!server.authenticate(web_user, web_pass)) {
-      return server.requestAuthentication();
+  if(web_auth_enabled){
+    if(isWebSSL){
+      if (!server_ssl.authenticate(web_user, web_pass)) {
+        Serial.println(web_user);
+        Serial.println(web_pass);
+        return server_ssl.requestAuthentication();
+      }
+    } else {
+      if (!server.authenticate(web_user, web_pass)) {
+        Serial.println(web_user);
+        Serial.println(web_pass);
+        return server.requestAuthentication();
+      }
     }
   }
 }
 
-// Display index.html (/)
+/* Static EndPoints */
+
+// index.html (/)
 void webIndex() {
   webAuth();
   if(isWebSSL){
@@ -42,7 +60,7 @@ void webIndex() {
   }
 }
 
-// Display settings.html (/settings)
+// settings.html (/settings)
 void webSettings() {
   webAuth();
   if(isWebSSL){
@@ -53,6 +71,44 @@ void webSettings() {
     server.send_P(200, "text/html", HTTP_SETTINGS, sizeof(HTTP_SETTINGS));
   }
 }
+
+// style.css
+void webStyle(){
+  webAuth();
+  if(isWebSSL){
+  server_ssl.sendHeader("content-encoding","gzip");
+  server_ssl.send_P(200, "text/html", HTTP_STYLE, sizeof(HTTP_STYLE));
+  } else {
+    server.sendHeader("content-encoding","gzip");
+    server.send_P(200, "text/html", HTTP_STYLE, sizeof(HTTP_STYLE));
+  }
+}
+
+// toast.min.js
+void webToast(){
+  webAuth();
+  if(isWebSSL){
+  server_ssl.sendHeader("content-encoding","gzip");
+  server_ssl.send_P(200, "text/html", HTTP_TOAST, sizeof(HTTP_TOAST));
+  } else {
+    server.sendHeader("content-encoding","gzip");
+    server.send_P(200, "text/html", HTTP_TOAST, sizeof(HTTP_TOAST));
+  }
+}
+
+// script.js
+void webScript(){
+  webAuth();
+  if(isWebSSL){
+  server_ssl.sendHeader("content-encoding","gzip");
+  server_ssl.send_P(200, "text/html", HTTP_SCRIPT, sizeof(HTTP_SCRIPT));
+  } else {
+    server.sendHeader("content-encoding","gzip");
+    server.send_P(200, "text/html", HTTP_SCRIPT, sizeof(HTTP_SCRIPT));
+  }
+}
+
+/* Dynamic EndPoints */
 
 // Copy body request into settings.json (/save)
 void webSaveSettings() {
@@ -91,6 +147,7 @@ void webLoadSettings() {
   }
 }
 
+// Just send 1 to check if website is alive
 void webPing(){
   if(isWebSSL){
     server_ssl.send(200, "text/plain", "1");
@@ -105,6 +162,7 @@ void webReboot() {
   ESP.restart();
 }
 
+// Send Name
 void webName(){
   webAuth();
   if(isWebSSL){
@@ -118,7 +176,7 @@ void webName(){
 void webMessage() {
   webAuth();
   bool isMessage = false;
-  
+
   // Check if message exists
   if(isWebSSL){ // SSL
     if(server_ssl.hasArg("plain") == false){
@@ -165,8 +223,7 @@ void webMessage() {
   }
 }
 
-//TODO Captive Portal
-
+// Redirect http to https
 void webRedirect(){
     if(ap){
       server.sendHeader("Location", String("https://") + WiFi.localIP().toString(), true);
@@ -177,69 +234,100 @@ void webRedirect(){
     server.client().stop(); // Stop is needed because we sent no content length
 }
 
+// Manage Certificates for SSL
 void webCheckCerts(){
-    File file = SPIFFS.open(web_cert_file, "r");
-    String web_cert;
-    String web_key;
-    if(file){
+  if(web_ssl_enabled){
+    bool cert_exists = SPIFFS.exists(web_cert_file);
+
+    Serial.println("AFTER SPIFFS OPEN");
+    Serial.println(web_user);
+    Serial.println(web_pass);
+    // If web cert exists
+    if(cert_exists){
+      File file = SPIFFS.open(web_cert_file, "r");
+      String web_cert;
+      String web_key;
+
       Serial.println("... [CERTS] Reading web cert ...");
+
       while (file.available()){
         web_cert += char(file.read());
       }
       file.close();
-      isWebSSL = true;
-    }
-    if(isWebSSL){
+
+      //If web key exists
       Serial.println("... [CERTS] Reading web key ...");
-      file = SPIFFS.open(web_key_file, "r");
-      while (file.available()){
-        web_key += char(file.read());
+      bool key_exists = SPIFFS.exists(web_key_file);
+      if(key_exists){
+        file = SPIFFS.open(web_key_file, "r");
+        while (file.available()){
+          web_key += char(file.read());
+        }
+        // Copy String to const char*
+        server_ssl.setRSACert(new BearSSL::X509List(web_cert.c_str()), new BearSSL::PrivateKey(web_key.c_str()));
+        isWebSSL = true;
+      } else {
+        isWebSSL = false; //No key so no SSL
       }
       file.close();
-      isWebSSL = true;
     } else {
-      isWebSSL = false;
+      isWebSSL = false; // No certs so no SSL
     }
-    server_ssl.setRSACert(new BearSSL::X509List(web_cert.c_str()), new BearSSL::PrivateKey(web_key.c_str()));
-}
-
-void webUpdate(){
-   server.handleClient(); //Manage Web Server
-  if(isWebSSL){
-    server_ssl.handleClient();
+  } else {
+    isWebSSL = false;
   }
 }
 
-void webStyle(){
-  webAuth();
-  if(isWebSSL){
-  server_ssl.sendHeader("content-encoding","gzip");
-  server_ssl.send_P(200, "text/html", HTTP_STYLE, sizeof(HTTP_STYLE));
-  } else {
-    server.sendHeader("content-encoding","gzip");
-    server.send_P(200, "text/html", HTTP_STYLE, sizeof(HTTP_STYLE));
-  }
+// Manage update from SPIFFS
+void updateESP(){
+    Serial.println("Open update.bin");
+    File file = SPIFFS.open("/update.bin", "r");
+    Serial.println("File open");
+    uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+
+    if (!Update.begin(maxSketchSpace, U_FLASH)) { //start with max available size
+      Update.printError(Serial);
+      Serial.println("ERROR");
+    }
+    Serial.println("Update begin...");
+    while (file.available()) {
+      uint8_t ibuffer[128];
+      file.read((uint8_t *)ibuffer, 128);
+      //Serial.println((char *)ibuffer);
+      Update.write(ibuffer, sizeof(ibuffer));
+    }
+    if (Update.end(true)) { //true to set the size to the current progress
+          Serial.printf("Update Success: %u\nRebooting...\n");
+    } else {
+          Update.printError(Serial);
+    }
+    file.close();
+    Serial.println("Update ended...");
+    ESP.restart();
 }
 
-void webToast(){
+// Manage Upload of binary to SPIFFS
+void webUpload() {
   webAuth();
-  if(isWebSSL){
-  server_ssl.sendHeader("content-encoding","gzip");
-  server_ssl.send_P(200, "text/html", HTTP_TOAST, sizeof(HTTP_TOAST));
-  } else {
-    server.sendHeader("content-encoding","gzip");
-    server.send_P(200, "text/html", HTTP_TOAST, sizeof(HTTP_TOAST));
-  }
-}
+  HTTPUpload& upload = server.upload();
 
-void webScript(){
-  webAuth();
-  if(isWebSSL){
-  server_ssl.sendHeader("content-encoding","gzip");
-  server_ssl.send_P(200, "text/html", HTTP_SCRIPT, sizeof(HTTP_SCRIPT));
-  } else {
-    server.sendHeader("content-encoding","gzip");
-    server.send_P(200, "text/html", HTTP_SCRIPT, sizeof(HTTP_SCRIPT));
+  if (upload.status == UPLOAD_FILE_START) {
+    String filename = "/update.bin";
+    fsUploadFile = SPIFFS.open(filename, "w");
+  } else if (upload.status == UPLOAD_FILE_WRITE) {
+    //Serial.print("handleFileUpload Data: ");
+    //Serial.println(upload.currentSize);
+    if (fsUploadFile) {
+      fsUploadFile.write(upload.buf, upload.currentSize);
+    }
+  } else if (upload.status == UPLOAD_FILE_END) {
+    if (fsUploadFile) {
+      fsUploadFile.close();
+      Serial.println("Upload finished updating started...");
+      updateESP();
+    } else {
+      Serial.println("Upload failed ...");
+    }
   }
 }
 
@@ -247,6 +335,7 @@ void webScript(){
 void webStart() {
     Serial.println("... [WEB] Starting web server .. ");
     webCheckCerts();
+
     if(isWebSSL){
       Serial.println("... [WEB] Secured website enable ...");
       server_ssl.on("/",webIndex); //Display main Page
@@ -260,6 +349,10 @@ void webStart() {
       server_ssl.on("/style.css",webStyle);
       server_ssl.on("/toast.min.js",webToast);
       server_ssl.on("/script.js",webScript);
+      server_ssl.on("/update", HTTP_POST, []() {
+      server_ssl.send(200, "text/plain", "");
+      }, webUpload);
+
       server.on("/description.xml", HTTP_GET, []() {
         SSDP.schema(server.client());
       });
@@ -279,10 +372,13 @@ void webStart() {
       server.on("/style.css",webStyle);
       server.on("/toast.min.js",webToast);
       server.on("/script.js",webScript);
-
+      server.on("/update", HTTP_POST, []() {
+        server.send(200, "text/plain", "");
+      }, webUpload);
       server.on("/description.xml", HTTP_GET, []() {
         SSDP.schema(server.client());
       });
+
       server.begin();
     }
     //Simple Service Discovery Protocol : Display ESP in Windows Network Tab
@@ -298,4 +394,12 @@ void webStart() {
     SSDP.setManufacturer("Usini");
     SSDP.setManufacturerURL("http://usini.eu");
     SSDP.begin();
+}
+
+// Manage Web Server in Loop
+void webUpdate(){
+   server.handleClient(); //Manage Web Server
+  if(isWebSSL){
+    server_ssl.handleClient();
+  }
 }

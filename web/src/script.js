@@ -50,8 +50,14 @@
     fetch("/load")
     .then(function(res){return res.json();})
     .then(function(data){
-      for (form_obj in data){
-        document.getElementsByName(form_obj)[0].value = data[form_obj];
+      for (var form_obj in data){
+        //console.log(data[form_obj]);
+        if(data[form_obj] === false || data[form_obj] == true){
+          //console.log(form_obj + " is " + data[form_obj]);
+          document.getElementsByName(form_obj)[1].checked = data[form_obj];
+        } else {
+          document.getElementsByName(form_obj)[0].value = data[form_obj];
+        }
       }
     });
 }
@@ -131,6 +137,7 @@
       ...memo,
       [pair[0]]: pair[1],
     }), {});
+    //console.log(data);
     fetch("/save", {
       headers: {
         "Accept": "application/json",
@@ -139,7 +146,7 @@
       method: "POST",
       body: JSON.stringify(data)
     }).then(function(){
-        console.log("Hide");
+        //console.log("Hide");
         hide_loading();
         show_ok("Settings Saved");
     });

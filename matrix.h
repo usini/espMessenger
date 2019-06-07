@@ -1,3 +1,9 @@
+/* Mini Matrix Manager
+  By Rémi Sarrailh <@m4dnerd>
+  Licence : MIT
+  UTF8 to Extended Ascii : https://playground.arduino.cc/Main/Utf8ascii/
+*/
+
 #include <MD_Parola.h>  //Led Matrix Library (advanced)
 #include <MD_MAX72xx.h> //Led Matrix Library (basic)
 #include "fonts/Parola_Fonts_data.h" //Ascii Extended Font
@@ -25,7 +31,7 @@ textEffect_t scrollEffect = PA_SCROLL_LEFT;
 
 MD_Parola matrix = MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
 
-//Scroll text on Matrix
+//Scroll curMessage on Matrix (if newMessage change update curMessage)
 void matrixUpdate() {
   if (matrix.displayAnimate())
   {
@@ -52,8 +58,8 @@ void initMatrix() {
 }
 
 
-//https://playground.arduino.cc/Main/Utf8ascii/
 
+// Convert UTF8 to Extended Ascii (byte by byte)
 byte utf8ascii(byte ascii) {
   if ( ascii < 128 ) // Standard ASCII-set 0..0x7F handling
   { c1 = 0;
@@ -72,20 +78,6 @@ byte utf8ascii(byte ascii) {
   return  (0);                                     // otherwise: return zero, if character has to be ignored
 }
 
-// convert String object from UTF8 String to Extended ASCII
-/*
-  String utf8ascii(String s) {
-        String r="";
-        char c;
-        for (int i=0; i<s.length(); i++)
-        {
-                c = utf8ascii(s.charAt(i));
-                if (c!=0) r+=c;
-        }
-        return r;
-  }
-*/
-
 // In Place conversion UTF8-string to Extended ASCII (ASCII is shorter!)
 char* utf8ascii(char* s) {
   int k = 0;
@@ -100,6 +92,7 @@ char* utf8ascii(char* s) {
   return s;
 }
 
+// Convert UTF8 char pointer to Extended Ascii char pointer and copy it inside newMessage
 void matrixText(char *message) {
   if (strlen(message) <= CHAR_LIMIT ) {
     message = utf8ascii(message);

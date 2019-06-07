@@ -6,10 +6,10 @@
   https://github.com/maditnerd/espMessenger
 
   Library required:
-  --> PubSubClient (for mqtt.h)
-  --> MD_MAX72xx
-  --> MD_Parola
-  --> ArduinoJSON (v6)
+  --> PubSubClient (mqtt.h)
+  --> MD_MAX72xx (matrix.h)
+  --> MD_Parola (matrix.h)
+  --> ArduinoJSON (v6) (settings.h / web.h)
 */
 
 #include "matrix.h"
@@ -32,9 +32,12 @@ void setup() {
   if(settings_state){ // If settings was performs correctly
     matrixText("WiFi");
     connect();  // Connect to WiFi (or create Accesss Point)
-    webStart(); // Start WebServer
-    //mqttStart(); //Start MQTT Client
+
+  webStart(); // Start WebServer
+  //mqttStart(); //Start MQTT Client
   }
+
+  // Display IP Address on Matrix
   char ip[100];
   String ipString;
   if(ap){

@@ -1,56 +1,18 @@
+/* JSON Settings Manager
+  By Rémi Sarrailh <@m4dnerd>
+  Licence : MIT
+*/
+
 #include <ArduinoJson.h>
 #include "FS.h"
-
-const char* DEFAULT_SSID1 = "";
-const char* DEFAULT_PASS1 = "";
-const char* DEFAULT_SSID2 = "";
-const char* DEFAULT_PASS2 = "";
-const char* DEFAULT_SSID3 = "";
-const char* DEFAULT_PASS3 = "";
-const char* DEFAULT_SSID4 = "";
-const char* DEFAULT_PASS4 = "";
-const char* DEFAULT_NAME = "textmatrix";
-
-const char* DEFAULT_AP_SSID = "textmatrix";
-const char* DEFAULT_AP_PASS = "textmatrix";
-const char* DEFAULT_WEB_USER = "textmatrix";
-const char* DEFAULT_WEB_PASS = "textmatrix";
-
-const char* ssid1;
-const char* pass1;
-const char* ssid2;
-const char* pass2;
-const char* ssid3;
-const char* pass3;
-const char* ssid4;
-const char* pass4;
-const char* ap_ssid;
-const char* ap_pass;
-const char* name;
-
-const char* web_user;
-const char* web_pass;
-
-const char *settings_file = "/settings.json";
+#include "settings_values.h"
 bool settings_state = false;
 
 //Initialize Settings with Default Value
 bool initSettings() {
   Serial.println("... [SETTINGS] Generating settings");
-  StaticJsonDocument<2048> settings;
-  settings["ssid1"] = DEFAULT_SSID1;
-  settings["pass1"] = DEFAULT_PASS1;
-  settings["ssid2"] = DEFAULT_SSID2;
-  settings["pass2"] = DEFAULT_PASS2;
-  settings["ssid3"] = DEFAULT_SSID3;
-  settings["pass3"] = DEFAULT_PASS3;
-  settings["ssid4"] = DEFAULT_SSID4;
-  settings["pass4"] = DEFAULT_PASS4;
-  settings["ap_ssid"] = DEFAULT_AP_SSID;
-  settings["ap_pass"] = DEFAULT_AP_PASS;
-  settings["web_user"] = DEFAULT_WEB_USER;
-  settings["web_pass"] = DEFAULT_WEB_PASS;
-  settings["name"] = DEFAULT_NAME;
+  StaticJsonDocument<JSON_BUFFER_SIZE> settings;
+  settings = getInitSettings(settings); //get default value from settings_values.h
 
   File file = SPIFFS.open(settings_file, "w");
   if(!file){
@@ -64,6 +26,7 @@ bool initSettings() {
   return true;
 }
 
+// Start SPIFFS and Check if Settings exists
 bool checkSettings(){
   //Open SPIFFS, format it if it needed to be format (can take some time)
   if (!SPIFFS.begin()){
@@ -72,12 +35,11 @@ bool checkSettings(){
   }
 
   //Check if Json file exists
-  File file = SPIFFS.open(settings_file, "r");
-  if(!file){
+  bool settings_exists = SPIFFS.exists(settings_file);
+  if(!settings_exists){
     Serial.println("... [SETTINGS] Settings doesn't exists");
     return initSettings(); //Initialize settings
   } else {
-    file.close(); //Settings exists close it.
     return true;
   }
   //Shouldn't happens
@@ -88,7 +50,7 @@ bool checkSettings(){
 bool readSettings(){
   Serial.println("... [SETTINGS] Opening settings.json ...");
   File file = SPIFFS.open(settings_file, "r");
-  StaticJsonDocument<2048> doc;
+  StaticJsonDocument<JSON_BUFFER_SIZE> doc;
   DeserializationError error = deserializeJson(doc, file);
   JsonObject settings = doc.as<JsonObject>();
 
@@ -103,18 +65,7 @@ bool readSettings(){
     }
   }
 
-  ssid1 = settings["ssid1"].as<char*>();
-  pass1 = settings["pass1"].as<char*>();
-  ssid2 = settings["ssid2"].as<char*>();
-  pass2 = settings["pass2"].as<char*>();
-  ssid3 = settings["ssid3"].as<char*>();
-  pass3 = settings["pass3"].as<char*>();
-  ssid4 = settings["ssid4"].as<char*>();
-  ap_ssid = settings["ap_ssid"].as<char*>();
-  ap_pass = settings["ap_pass"].as<char*>();
-  name = settings["name"].as<char*>();
-  web_user = settings["web_user"].as<char*>();
-  web_pass = settings["web_pass"].as<char*>();
+  setSettings(settings); // Set value from settings_value.h
   file.close();
   return true;
 }

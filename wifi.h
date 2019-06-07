@@ -3,7 +3,6 @@
 #include <ESP8266mDNS.h>
 #include <ESP8266NetBIOS.h>
 
-
 ESP8266WiFiMulti network;
 bool connection = false;
 bool ap = false;
@@ -21,10 +20,16 @@ bool checkSSID(){
   if (n == 0){
     return false;
   }
-  Serial.println(ssid1);
-  Serial.println(ssid2);
-  Serial.println(ssid3);
-  Serial.println(ssid4);
+
+    Serial.print("  ...");
+    Serial.println(ssid1);
+    Serial.print("  ...");
+    Serial.println(ssid2);
+    Serial.print("  ...");
+    Serial.println(ssid3);
+    Serial.print("  ...");
+    Serial.println(ssid4);
+
   for (int i = 0; i < n; i++){
     if(WiFi.SSID(i) == ssid1)
       return true;

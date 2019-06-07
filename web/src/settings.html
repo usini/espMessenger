@@ -7,12 +7,18 @@
 
 <title>...</title>
 <h1><span>&#128223;</span> <span id="name">...</span></h1>
+<div id="loading" class="loading"></div>
 <h2> &#128295; Settings </h2>
 <h3> Web </h3>
 <form id="settings_form">
+  <input type="hidden" name="web_auth_enabled" value=false />
+  Authentication : <input title="Enable Authentication on the web interface" type="checkbox" name="web_auth_enabled" value=true><br>
+  <input type="hidden" name="web_ssl_enabled" value=false />
+  SSL (experimental) : <input title="Add SSL encryption, really slow and buggy" type="checkbox" name="web_ssl_enabled" value=true><br><br>
   Name<br> <input title="Name of the led matrix (Used to find the matrix --> http://name or http://name.local also visible in Network on Windows" type="text" name="name"><br>
   User<br>      <input type="text" title="Username, ask when connecting to the web interface" name="web_user"><br>
   Password<br>  <input type="password" title="Password to protected the web interface" name="web_pass"><br>
+
   <h3> Wi-Fi </h3>
   <div class="collapse">
     SSID 1<br>      <input type="text" title="WiFi network name" name="ssid1"><br>
@@ -25,12 +31,27 @@
     PASSWORD 4<br> <input type="password" name="pass4"><br>
   </div>
   <h3> Access Point </h3>
-  SSID<br>       <input type="text" title="If the led matrix is unable to connect to a WiFi point, it will generate one" name="ap_ssid"><br>
+  SSID<br> <input type="text" title="If the led matrix is unable to connect to a WiFi point, it will generate one" name="ap_ssid"><br>
   PASSWORD<br> <input type="text" name="ap_pass"><br><br>
+  <h3> MQTT </h3>
+
+  <input type="hidden" name="mqtt_enabled" value="false" />
+  Enable <input title="Enable MQTT" type="checkbox" name="mqtt_enabled" value="true"><br>
+
+  <input type="hidden" name="mqtt_ssl_enabled" value="false" />
+  Encryption <input title="Enable SSL Encryption" type="checkbox" name="mqtt_ssl_enabled" value="true"><br><br>
+  MQTT Server<br> <input type="text" title="MQTT Server without ws://" name="mqtt_server"><br>
+  MQTT Port<br> <input type="text" title="MQTT Port (usually 1883 / SSL:8883)" name="mqtt_port"><br>
+  MQTT Username<br> <input type="text" title="MQTT Username (leave empty for anonymous)" name="mqtt_username"><br>
+  MQTT Password<br> <input type="text" title="MQTT Password (leave empty for no password)" name="mqtt_password"><br>
+  <h3> </h3>
   <input type="submit">
 </form>
-<button onclick="window.location.href = '/'"> &#8617; </button>
 
+
+<h3> Update </h3>
+<form method='POST' action='/update' enctype='multipart/form-data'><input type='file' name='update'><input type='submit' value='Update'></form>
+<button onclick="window.location.href = '/'"> &#8617; </button>
 <script src="toast.min.js"></script>
 <script src="script.js"></script>
 <script>

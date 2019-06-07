@@ -1,3 +1,8 @@
+/* MQTT Manager
+  By Rémi Sarrailh <@m4dnerd>
+  Licence : MIT
+*/
+
 #include <PubSubClient.h>
 
 //TODO Make it changeable
