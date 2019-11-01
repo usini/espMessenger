@@ -1,58 +1,46 @@
 /*
-  ESPManager
+  ESPMessenger
   Connected Text Matrix for ESP8266
-  By Sarrailh Rémi
+  By µsini
   Licence : MIT
-  https://github.com/maditnerd/espMessenger
+  https://github.com/usini/espMessenger
 
   Library required:
-  --> PubSubClient (mqtt.h)
   --> MD_MAX72xx (matrix.h)
   --> MD_Parola (matrix.h)
   --> ArduinoJSON (v6) (settings.h / web.h)
+  --> WiFiManager (settings.h)
 */
 
-#include "matrix.h"
+//#include "lang/en.h"
+#include "lang/fr.h"
+
 #include "settings.h"
-#include "wifi.h"
+#include "matrix.h"
 #include "web.h"
-#include "mqtt.h"
+#include "banner.h"
+
+const int LED = D4;
 
 void setup() {
   Serial.begin(74880);
-  Serial.println("~~~~~~~~~~  Text Matrix ~~~~~~~~~~");
+  pinMode(LED, OUTPUT);
+  digitalWrite(LED, LOW);
+
+  introBanner();
+
+  startWiFiManager();
+
   initMatrix();
-  matrixText("Settings");
+  matrixText((char*)settings.name);
+  digitalWrite(LED, HIGH);
 
-  // Check if Settings exists or create it
-  if(checkSettings()){
-    settings_state = readSettings(); // Read settings
-  }
-
-  if(settings_state){ // If settings was performs correctly
-    matrixText("WiFi");
-    connect();  // Connect to WiFi (or create Accesss Point)
-
+  setHostname();
   webStart(); // Start WebServer
-  //mqttStart(); //Start MQTT Client
-  }
-
-  // Display IP Address on Matrix
-  char ip[100];
-  String ipString;
-  if(ap){
-  ipString = WiFi.localIP().toString();
-  } else {
-  ipString = WiFi.softAPIP().toString();
-  }
-  ipString.toCharArray(ip, sizeof(ip));
-  matrixText(ip); //Todo hostname or IP for Access Point
+  connectionBanner();
 }
 
 void loop() {
-  if(settings_state){ // Check if settings was performs correctly or do nothing
-    webUpdate();
-    //mqttUpdate();
-    MDNS.update(); // Manage Bonjour Name (textmatrix.local by default)
-  }
+  webUpdate();
+  MDNS.update(); // Manage Bonjour Name
 }

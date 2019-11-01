@@ -63,9 +63,10 @@ def convertToGZIP(filename, varname, new_filename):
   with open(new_filename,'w') as index_final_file:
     index_final_file.write(index_final)
 
-convertToGZIP("index.html", "HTTP_INDEX", "../web_index.h")
-convertToGZIP("settings.html", "HTTP_SETTINGS", "../web_settings.h")
-convertToGZIP("script.js", "HTTP_SCRIPT", "../web_script.h")
-convertToGZIP("toast.min.js", "HTTP_TOAST", "../web_toast.h")
-convertToGZIP("style.css", "HTTP_STYLE", "../web_style.h")
+convertToGZIP("index.html", "MES_INDEX", "../web_index.h")
+convertToGZIP("index_fr.html", "MES_INDEX", "../web_index_fr.h")
+convertToGZIP("script.js", "MES_SCRIPT", "../web_script.h")
+convertToGZIP("script_fr.js", "MES_SCRIPT", "../web_script_fr.h")
+convertToGZIP("toast.min.js", "MES_TOAST", "../web_toast.h")
+convertToGZIP("style.css", "MES_STYLE", "../web_style.h")
 print("... Done!")

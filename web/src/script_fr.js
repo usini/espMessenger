@@ -14,7 +14,7 @@
 
     //Reboot
     function reboot(){
-      show_error("Restarting...");
+      show_error("Red&eacute;marrage...");
       loading();
       clearInterval(pingInterval);
       pingInterval = setInterval(ping, 100);
@@ -29,7 +29,7 @@
         if(!connection){
             connection = true;
             hide_loading();
-            show_ok("Connection OK!");
+            show_ok("Connect&eacute;");
             clearInterval(pingInterval);
             pingInterval = setInterval(ping, 5000);
           }
@@ -38,11 +38,11 @@
         if(connection){
         loading();
         connection = false;
-        show_error("Connection Lost");
+        show_error("D&eacute;connect&eacute;");
         clearInterval(pingInterval);
         pingInterval = setInterval(ping, 1000);
         }
-        show_error("Reconnecting...");
+        show_error("Reconnexion...");
       });
     }
 
@@ -100,7 +100,7 @@
       fetch("/message/"+data.message).then(function(){
         console.log("Hide");
         hide_loading();
-        show_ok("Message sent");
+        show_ok("Message envoy&eacute;");
       });
     });
   }

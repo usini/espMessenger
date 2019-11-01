@@ -9,15 +9,13 @@
 #include "fonts/Parola_Fonts_data.h" //Ascii Extended Font
 #include <Ticker.h> //Parralel Manager
 
-#define CLK_PIN   D5  // or SCK
-#define DATA_PIN  D6  // or MOSI
-#define CS_PIN    D7  // or SS
+#define CLK_PIN   D7  // or SCK
+#define CS_PIN    D6  // or SS
+#define DATA_PIN  D5  // or MOSI
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
-#define MAX_DEVICES 4 //TODO Make it changeable
 #define CHAR_SPACING  1 // pixels between characters
 #define BUF_SIZE  1024
 #define CHAR_LIMIT 280
-
 Ticker matrixManager;
 
 char curMessage[BUF_SIZE];
@@ -29,31 +27,33 @@ const uint16_t PAUSE_TIME = 2000;
 uint8_t frameDelay = 50;  // default frame delay value
 textEffect_t scrollEffect = PA_SCROLL_LEFT;
 
-MD_Parola matrix = MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
+MD_Parola* matrix;
 
 //Scroll curMessage on Matrix (if newMessage change update curMessage)
 void matrixUpdate() {
-  if (matrix.displayAnimate())
+  if (matrix->displayAnimate())
   {
     if (newMessageAvailable)
     {
       strcpy(curMessage, newMessage);
       newMessageAvailable = false;
     }
-    matrix.displayReset();
+    matrix->displayReset();
   }
 }
 
 //Initialize Matrix
 void initMatrix() {
+  //Serial.println(settings.devices);
+  matrix = new MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, settings.devices);
   //Settings Matrix
-  matrix.begin();
-  matrix.setInvert(false);
-  matrix.displayClear();
-  matrix.displaySuspend(false);
-  matrix.setPause(PAUSE_TIME);
-  matrix.setFont(ExtASCII);
-  matrix.displayScroll(curMessage, PA_LEFT, scrollEffect, frameDelay);
+  matrix->begin();
+  matrix->setInvert(false);
+  matrix->displayClear();
+  matrix->displaySuspend(false);
+  matrix->setPause(PAUSE_TIME);
+  matrix->setFont(ExtASCII);
+  matrix->displayScroll(curMessage, PA_LEFT, scrollEffect, frameDelay);
   matrixManager.attach_ms(10, matrixUpdate);
 }
 
@@ -99,9 +99,9 @@ void matrixText(char *message) {
     //Serial.println(strlen(message));
     strcpy(newMessage, message);
     newMessageAvailable = true;
-    Serial.print("--> Message : ");
+    Serial.print(TEXT_MESSAGE);
     Serial.println(message);
   } else {
-    Serial.println("--> ERROR Message Too Long!");
+    Serial.println(TEXT_MESSAGE_TOO_LONG);
   }
 }
