@@ -4,8 +4,7 @@
   UTF8 to Extended Ascii : https://playground.arduino.cc/Main/Utf8ascii/
 */
 
-#include <MD_Parola.h>  //Led Matrix Library (advanced)
-#include <MD_MAX72xx.h> //Led Matrix Library (basic)
+
 #include "fonts/Parola_Fonts_data.h" //Ascii Extended Font
 #include <Ticker.h> //Parralel Manager
 
@@ -22,10 +21,6 @@ char curMessage[BUF_SIZE];
 char newMessage[BUF_SIZE];
 bool newMessageAvailable = false;
 static byte c1;  // Last character buffer
-// Scrolling parameters
-const uint16_t PAUSE_TIME = 2000;
-uint8_t frameDelay = 50;  // default frame delay value
-textEffect_t scrollEffect = PA_SCROLL_LEFT;
 
 MD_Parola* matrix;
 
@@ -42,20 +37,29 @@ void matrixUpdate() {
   }
 }
 
+void resetScrolling() {
+  matrix->setInvert(settings.invert);
+  matrix->setPause(settings.pause);
+  matrix->setIntensity(settings.intensity);
+  matrix->displayScroll(curMessage, settings.textPosition, settings.effectIn, settings.speed);
+  matrix->setTextEffect(settings.effectIn, settings.effectOut);
+}
+
+
 //Initialize Matrix
 void initMatrix() {
+
   //Serial.println(settings.devices);
   matrix = new MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, settings.devices);
   //Settings Matrix
   matrix->begin();
-  matrix->setInvert(false);
   matrix->displayClear();
   matrix->displaySuspend(false);
-  matrix->setPause(PAUSE_TIME);
   matrix->setFont(ExtASCII);
-  matrix->displayScroll(curMessage, PA_LEFT, scrollEffect, frameDelay);
+  resetScrolling();
   matrixManager.attach_ms(10, matrixUpdate);
 }
+
 
 
 
@@ -93,15 +97,21 @@ char* utf8ascii(char* s) {
 }
 
 // Convert UTF8 char pointer to Extended Ascii char pointer and copy it inside newMessage
-void matrixText(char *message) {
-  if (strlen(message) <= CHAR_LIMIT ) {
-    message = utf8ascii(message);
-    //Serial.println(strlen(message));
-    strcpy(newMessage, message);
-    newMessageAvailable = true;
-    Serial.print(TEXT_MESSAGE);
-    Serial.println(message);
-  } else {
-    Serial.println(TEXT_MESSAGE_TOO_LONG);
+void matrixText(char *message, bool instant) {
+  //if (strlen(message) <= CHAR_LIMIT )
+  message = utf8ascii(message);
+  //Serial.println(strlen(message));
+  strcpy(newMessage, message);
+  newMessageAvailable = true;
+  if (instant) {
+    matrix->displayClear();
+    strcpy(curMessage, newMessage);
+    resetScrolling();
   }
+
+  Serial.print(TEXT_MESSAGE);
+  Serial.println(message);
+  // } else {
+  //  Serial.println(TEXT_MESSAGE_TOO_LONG);
+  //}
 }

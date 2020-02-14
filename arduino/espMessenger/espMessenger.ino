@@ -28,11 +28,10 @@ void setup() {
   digitalWrite(LED, LOW);
 
   introBanner();
-
   startWiFiManager();
 
   initMatrix();
-  matrixText((char*)settings.name);
+  matrixText((char*)settings.name, true);
   digitalWrite(LED, HIGH);
 
   setHostname();

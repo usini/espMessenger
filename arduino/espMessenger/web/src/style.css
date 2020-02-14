@@ -131,3 +131,25 @@
           transform: rotate(360deg);
         }
       }
+
+       /* unvisited link */
+      a:link {
+        color: #ff2222;
+      }
+
+      /* visited link */
+      a:visited {
+        color: #ff2222;
+      }
+
+      /* mouse over link */
+      a:hover {
+        color: #ffaa1c;
+      }
+
+      /* selected link */
+      a:active {
+        color: #E2E2E2;
+      } 
+
+      

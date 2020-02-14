@@ -33,8 +33,8 @@ const String TEXT_FAILED_OPEN_CONFIG = "*ST: Echec de l'écriture de settings.js
 //web.h
 const String TEXT_COMMAND = "Commande:";
 const String TEXT_WEB_MESSAGE = "Message Web:";
-const String TEXT_MESSAGE_SENT = "Message envoyé";
-const String TEXT_NOT_FOUNDED = "404 Page non trouvée";
+const String TEXT_MESSAGE_SENT = "Message envoye";
+const String TEXT_NOT_FOUNDED = "404 Page non trouvee";
 const String TEXT_OPEN_UPDATE = "Ouverture de update.bin";
 const String TEXT_ERROR_UPDATE = "ERREUR Impossible d'ouvrir update.bin";
 const String TEXT_BEGIN_UPDATE = "Début de la mise à jour...";
