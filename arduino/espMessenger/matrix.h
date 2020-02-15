@@ -8,9 +8,19 @@
 #include "fonts/Parola_Fonts_data.h" //Ascii Extended Font
 #include <Ticker.h> //Parralel Manager
 
+// PCB PINS
+
 #define CLK_PIN   D7  // or SCK
 #define CS_PIN    D6  // or SS
 #define DATA_PIN  D5  // or MOSI
+
+// ALT PINS 
+/*
+#define CLK_PIN   D5  // or SCK
+#define DATA_PIN  D6  // or MOSI
+#define CS_PIN    D7  // or SS
+*/
+
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define CHAR_SPACING  1 // pixels between characters
 #define BUF_SIZE  1024
