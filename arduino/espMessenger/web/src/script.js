@@ -1,11 +1,7 @@
     connection = true;
     //Get Name
-    fetch("/name").then(function(response) {
-      return response.text().then(function(text) {
-        document.getElementById("name").innerHTML = text;
-        document.title = text;
-      });
-    });
+    settings = {};   
+    getSettings();
 
     //Ping
     if(location.protocol == "http:") {
@@ -14,7 +10,7 @@
 
     //Reboot
     function reboot(){
-      show_error("Restarting...");
+      show_error(txt_restart);
       loading();
       clearInterval(pingInterval);
       pingInterval = setInterval(ping, 100);
@@ -29,7 +25,7 @@
         if(!connection){
             connection = true;
             hide_loading();
-            show_ok("Connection OK!");
+            show_ok(txt_connected);
             clearInterval(pingInterval);
             pingInterval = setInterval(ping, 5000);
           }
@@ -38,11 +34,11 @@
         if(connection){
         loading();
         connection = false;
-        show_error("Connection Lost");
+        show_error(txt_disconnected);
         clearInterval(pingInterval);
         pingInterval = setInterval(ping, 1000);
         }
-        show_error("Reconnecting...");
+        show_error(txt_reconnection);
       });
     }
 
@@ -100,8 +96,27 @@
       fetch("/message/"+data.message).then(function(){
         console.log("Hide");
         hide_loading();
-        show_ok("Message sent");
+        show_ok(txt_message_sent);
       });
     });
   }
 
+  function changeSpeed(value){
+    fetch("/speed/" + value);
+  }
+
+  function changeIntensity(value){
+    fetch("/intensity/" + value);
+  }
+
+  function getSettings(){
+    fetch('/settings')
+    .then(res => res.json())
+    .then(function(json){
+      settings = json;
+      document.getElementById("name").innerHTML = settings.name;
+      document.title = settings.name;
+      document.getElementById("speed").value = settings.speed;
+      document.getElementById("intensity").value = settings.intensity;
+    });
+  }

@@ -3,15 +3,7 @@
   Licence : MIT
 */
 
-// Static Web File (en)
-/*
-  #include "web/web_index.h"
-  #include "web/web_script.h"
-*/
-// Static Web File (fr)
-#include "web/web_index_fr.h"
-#include "web/web_script_fr.h"
-
+#include "web/web_script.h"
 #include "web/web_style.h"
 #include "web/web_range.h"
 #include "web/web_toast.h"
@@ -102,10 +94,12 @@ void setHostname() {
 }
 
 // Basic Authentication
-void webAuth() {
-  if (!server.authenticate(settings.user, settings.pass)) {
-    return server.requestAuthentication();
+bool webAuth() {
+  bool authOK = server.authenticate(settings.user, settings.pass);
+  if (!authOK) {
+    server.requestAuthentication();
   }
+  return authOK;
 }
 
 
@@ -113,36 +107,48 @@ void webAuth() {
 
 // index.html (/)
 void webIndex() {
-  webAuth();
-  server.sendHeader("content-encoding", "gzip");
-  server.send_P(200, "text/html", MES_INDEX, sizeof(MES_INDEX));
+  if (webAuth()) {
+    server.sendHeader("content-encoding", "gzip");
+    server.send_P(200, "text/html", MES_INDEX, sizeof(MES_INDEX));
+  }
 }
 
 // style.css
 void webStyle() {
-  webAuth();
-  server.sendHeader("content-encoding", "gzip");
-  server.send_P(200, "text/html", MES_STYLE, sizeof(MES_STYLE));
+  if (webAuth()) {
+    server.sendHeader("content-encoding", "gzip");
+    server.send_P(200, "text/css", MES_STYLE, sizeof(MES_STYLE));
+  }
 }
 
 void webRange() {
-  webAuth();
-  server.sendHeader("content-encoding", "gzip");
-  server.send_P(200, "text/html", MES_RANGE, sizeof(MES_RANGE));
+  if (webAuth()) {
+    server.sendHeader("content-encoding", "gzip");
+    server.send_P(200, "text/css", MES_RANGE, sizeof(MES_RANGE));
+  }
 }
 
 // toast.min.js
 void webToast() {
-  webAuth();
-  server.sendHeader("content-encoding", "gzip");
-  server.send_P(200, "text/html", MES_TOAST, sizeof(MES_TOAST));
+  if (webAuth()) {
+    server.sendHeader("content-encoding", "gzip");
+    server.send_P(200, "application/javascript", MES_TOAST, sizeof(MES_TOAST));
+  }
 }
 
 // script.js
 void webScript() {
-  webAuth();
-  server.sendHeader("content-encoding", "gzip");
-  server.send_P(200, "text/html", MES_SCRIPT, sizeof(MES_SCRIPT));
+  if (webAuth()) {
+    server.sendHeader("content-encoding", "gzip");
+    server.send_P(200, "application/javascript", MES_SCRIPT, sizeof(MES_SCRIPT));
+  }
+}
+
+void webLang() {
+  if (webAuth()) {
+    server.sendHeader("content-encoding", "gzip");
+    server.send_P(200, "application/javascript", MES_SCRIPT_LANG, sizeof(MES_SCRIPT_LANG));
+  }
 }
 
 /* Dynamic EndPoints */
@@ -154,176 +160,181 @@ void webPing() {
 
 // Restart ESP
 void webReboot() {
-  webAuth();
-  ESP.restart();
+  if (webAuth()) {
+    ESP.restart();
+  }
 }
 
 // Send Name
 void webName() {
-  webAuth();
-  server.send(200, "text/plain", settings.name);
+  if (webAuth()) {
+    server.send(200, "text/plain", settings.name);
+  }
 }
 
 void webRestHandler() {
-  webAuth();
-  Serial.println(server.uri());
+  if (webAuth()) {
+    Serial.println(server.uri());
 
-  String url = server.uri();
-  String command = getValue(url, '/', 1);
-  Serial.print(TEXT_COMMAND);
-  Serial.println(command);
+    String url = server.uri();
+    String command = getValue(url, '/', 1);
+    Serial.print(TEXT_COMMAND);
+    Serial.println(command);
 
-  if (command == "message") {
-    Serial.println(TEXT_WEB_MESSAGE);
-    String message = getValue(url, '/', 2);
-    Serial.println(message);
-    matrixText(string2char(urldecode(message)), true);
-    server.send(200, "text/plain", TEXT_MESSAGE_SENT);
+    if (command == "message") {
+      Serial.println(TEXT_WEB_MESSAGE);
+      String message = getValue(url, '/', 2);
+      Serial.println(message);
+      matrixText(string2char(urldecode(message)), true);
+      server.send(200, "text/plain", TEXT_MESSAGE_SENT);
 
-  } else if (command == "messageAfter") {
-    Serial.println(TEXT_WEB_MESSAGE);
-    String message = getValue(url, '/', 2);
-    Serial.println(message);
-    matrixText(string2char(urldecode(message)), false);
-    server.send(200, "text/plain", TEXT_MESSAGE_SENT);
+    } else if (command == "messageAfter") {
+      Serial.println(TEXT_WEB_MESSAGE);
+      String message = getValue(url, '/', 2);
+      Serial.println(message);
+      matrixText(string2char(urldecode(message)), false);
+      server.send(200, "text/plain", TEXT_MESSAGE_SENT);
 
-  } else if (command == "speed") {
-    String value = getValue(url, '/', 2);
-    settings.speed = value.toInt();
-    matrix->setSpeed(settings.speed);
-    saveSettings();
-    server.send(200, "text/plain", "Speed:" + value);
-    
-  } else if (command == "align") {
-    String align = getValue(url, '/', 2);
-    if (align == "LEFT") {
-      settings.textPosition = PA_LEFT;
-    } else if (align == "RIGHT") {
-      settings.textPosition  = PA_RIGHT;
-    } else if (align == "CENTER") {
-      settings.textPosition = PA_CENTER;
+    } else if (command == "speed") {
+      String value = getValue(url, '/', 2);
+      settings.speed = value.toInt();
+      matrix->setSpeed(settings.speed);
+      saveSettings();
+      server.send(200, "text/plain", "Speed:" + value);
+
+    } else if (command == "align") {
+      String align = getValue(url, '/', 2);
+      if (align == "LEFT") {
+        settings.textPosition = PA_LEFT;
+      } else if (align == "RIGHT") {
+        settings.textPosition  = PA_RIGHT;
+      } else if (align == "CENTER") {
+        settings.textPosition = PA_CENTER;
+      }
+      matrix->displayClear();
+      resetScrolling();
+      saveSettings();
+      server.send(200, "text/plain", "Align: " + align);
+
+    } else if (command == "pause") {
+      String value = getValue(url, '/', 2);
+      settings.pause = value.toInt();
+      matrix->setPause(settings.pause);
+      saveSettings();
+      server.send(200, "text/plain", "Pause:" + value);
+
+    } else if (command == "intensity") {
+      String value = getValue(url, '/', 2);
+      int valInt = value.toInt();
+      if (valInt < 0) {
+        valInt = 0;
+      } else if (valInt > 15) {
+        valInt = 15;
+      }
+      settings.intensity = valInt;
+      matrix->setIntensity(settings.intensity);
+      saveSettings();
+      server.send(200, "text/plain", "Intensity:" + value);
+    } else if (command == "invert") {
+      String value = getValue(url, '/', 2);
+      if (value == "true") {
+        settings.invert = true;
+        matrix->setInvert(true);
+      } else if (value == "false") {
+        settings.invert = true;
+        matrix->setInvert(false);
+      }
+      saveSettings();
+      server.send(200, "text/plain", "Invert:" + value);
     }
-    matrix->displayClear();
-    resetScrolling();
-    saveSettings();
-    server.send(200, "text/plain", "Align: " + align);
-
-  } else if (command == "pause") {
-    String value = getValue(url, '/', 2);
-    settings.pause = value.toInt();
-    matrix->setPause(settings.pause);
-    saveSettings();
-    server.send(200, "text/plain", "Pause:" + value);
-        
-  } else if (command == "intensity") {
-    String value = getValue(url, '/', 2);
-    int valInt = value.toInt();
-    if(valInt < 0){
-      valInt = 0;      
-    } else if (valInt > 15){
-      valInt = 15;
-    }
-    settings.intensity = valInt;
-    matrix->setIntensity(settings.intensity);
-    saveSettings();
-    server.send(200, "text/plain", "Intensity:" + value);
-  } else if (command == "invert"){
-    String value = getValue(url, '/', 2);
-    if(value == "true"){
-      settings.invert = true;
-      matrix->setInvert(true);
-    } else if (value == "false") {
-      settings.invert = true;
-      matrix->setInvert(false);
-    }
-    saveSettings();
-    server.send(200, "text/plain", "Invert:" + value);
-  }
     else if (command == "effect") {
-    String entry = getValue(url, '/', 2);
-    String effect = getValue(url, '/', 3);
-    textEffect_t newEffect;
-    if (effect == "NO_EFFECT") {
-      newEffect = PA_NO_EFFECT;
-    } else if (effect == "PRINT") {
-      newEffect = PA_PRINT;
-    } else if (effect == "SCROLL_UP") {
-      newEffect = PA_SCROLL_UP;
-    } else if (effect == "SCROLL_DOWN") {
-      newEffect = PA_SCROLL_DOWN;
-    } else if (effect == "SCROLL_LEFT") {
-      newEffect = PA_SCROLL_LEFT;
-    } else if (effect == "SCROLL_RIGHT") {
-      newEffect = PA_SCROLL_RIGHT;
-    } else if (effect == "SLICE") {
-      newEffect = PA_SLICE;
-    } else if (effect == "MESH") {
-      newEffect = PA_MESH;
-    } else if (effect == "FADE") {
-      newEffect = PA_FADE;
-    } else if (effect == "DISSOLVE") {
-      newEffect = PA_DISSOLVE;
-    } else if (effect == "BLINDS") {
-      newEffect = PA_BLINDS;
-    } else if (effect == "RANDOM") {
-      newEffect = PA_RANDOM;
-    } else if (effect == "WIPE") {
-      newEffect = PA_WIPE;
-    } else if (effect == "WIPE_CURSOR") {
-      newEffect = PA_WIPE_CURSOR;
-    } else if (effect == "SCAN_HORIZ") {
-      newEffect = PA_SCAN_HORIZ;
-    } else if (effect == "SCAN_HORIZX") {
-      newEffect = PA_SCAN_HORIZX;
-    } else if (effect == "SCAN_VERT") {
-      newEffect = PA_SCAN_VERT;
-    } else if (effect == "SCAN_VERTX") {
-      newEffect = PA_SCAN_VERTX;
-    } else if (effect == "OPENING") {
-      newEffect = PA_OPENING;
-    } else if (effect == "OPENING_CURSOR") {
-      newEffect = PA_OPENING_CURSOR;
-    } else if (effect == "CLOSING") {
-      newEffect = PA_CLOSING;
-    } else if (effect == "CLOSING_CURSOR") {
-      newEffect = PA_CLOSING_CURSOR;
-    } else if (effect == "SCROLL_UP_LEFT") {
-      newEffect = PA_SCROLL_UP_LEFT;
-    } else if (effect == "SCROLL_UP_RIGHT") {
-      newEffect = PA_SCROLL_UP_RIGHT;
-    } else if (effect == "SCROLL_DOWN_LEFT") {
-      newEffect = PA_SCROLL_DOWN_LEFT;
-    } else if (effect == "SCROLL_DOWN_RIGHT") {
-      newEffect = PA_SCROLL_DOWN_RIGHT;
-    } else if (effect == "GROW_UP") {
-      newEffect = PA_GROW_UP;
-    } else if (effect == "GROW_DOWN") {
-      newEffect = PA_GROW_DOWN;
+      String entry = getValue(url, '/', 2);
+      String effect = getValue(url, '/', 3);
+      textEffect_t newEffect;
+      if (effect == "NO_EFFECT") {
+        newEffect = PA_NO_EFFECT;
+      } else if (effect == "PRINT") {
+        newEffect = PA_PRINT;
+      } else if (effect == "SCROLL_UP") {
+        newEffect = PA_SCROLL_UP;
+      } else if (effect == "SCROLL_DOWN") {
+        newEffect = PA_SCROLL_DOWN;
+      } else if (effect == "SCROLL_LEFT") {
+        newEffect = PA_SCROLL_LEFT;
+      } else if (effect == "SCROLL_RIGHT") {
+        newEffect = PA_SCROLL_RIGHT;
+      } else if (effect == "SLICE") {
+        newEffect = PA_SLICE;
+      } else if (effect == "MESH") {
+        newEffect = PA_MESH;
+      } else if (effect == "FADE") {
+        newEffect = PA_FADE;
+      } else if (effect == "DISSOLVE") {
+        newEffect = PA_DISSOLVE;
+      } else if (effect == "BLINDS") {
+        newEffect = PA_BLINDS;
+      } else if (effect == "RANDOM") {
+        newEffect = PA_RANDOM;
+      } else if (effect == "WIPE") {
+        newEffect = PA_WIPE;
+      } else if (effect == "WIPE_CURSOR") {
+        newEffect = PA_WIPE_CURSOR;
+      } else if (effect == "SCAN_HORIZ") {
+        newEffect = PA_SCAN_HORIZ;
+      } else if (effect == "SCAN_HORIZX") {
+        newEffect = PA_SCAN_HORIZX;
+      } else if (effect == "SCAN_VERT") {
+        newEffect = PA_SCAN_VERT;
+      } else if (effect == "SCAN_VERTX") {
+        newEffect = PA_SCAN_VERTX;
+      } else if (effect == "OPENING") {
+        newEffect = PA_OPENING;
+      } else if (effect == "OPENING_CURSOR") {
+        newEffect = PA_OPENING_CURSOR;
+      } else if (effect == "CLOSING") {
+        newEffect = PA_CLOSING;
+      } else if (effect == "CLOSING_CURSOR") {
+        newEffect = PA_CLOSING_CURSOR;
+      } else if (effect == "SCROLL_UP_LEFT") {
+        newEffect = PA_SCROLL_UP_LEFT;
+      } else if (effect == "SCROLL_UP_RIGHT") {
+        newEffect = PA_SCROLL_UP_RIGHT;
+      } else if (effect == "SCROLL_DOWN_LEFT") {
+        newEffect = PA_SCROLL_DOWN_LEFT;
+      } else if (effect == "SCROLL_DOWN_RIGHT") {
+        newEffect = PA_SCROLL_DOWN_RIGHT;
+      } else if (effect == "GROW_UP") {
+        newEffect = PA_GROW_UP;
+      } else if (effect == "GROW_DOWN") {
+        newEffect = PA_GROW_DOWN;
+      }
+      if (entry == "in") {
+        settings.effectIn = newEffect;
+      } else if (entry == "out") {
+        settings.effectOut = newEffect;
+      }
+      matrix->displayClear();
+      resetScrolling();
+      saveSettings();
+      server.send(200, "text/plain", entry + ": " + effect);
     }
-    if (entry == "in") {
-      settings.effectIn = newEffect;
-    } else if (entry == "out") {
-      settings.effectOut = newEffect;
-    }
-    matrix->displayClear();
-    resetScrolling();
-    saveSettings();
-    server.send(200, "text/plain", entry + ": " + effect);
+    server.send(404, "text/plain", TEXT_NOT_FOUNDED);
   }
-  server.send(404, "text/plain", TEXT_NOT_FOUNDED);
 }
 
-void webSettings(){
-  webAuth();
-  File configFile = SPIFFS.open(settings_file,"r");
-  server.streamFile(configFile, "text/plain");
-  configFile.close();
+void webSettings() {
+  if (webAuth()) {
+    File configFile = SPIFFS.open(settings_file, "r");
+    server.streamFile(configFile, "text/plain");
+    configFile.close();
+  }
 }
 
-void webSave(){
-  webAuth();
-  saveSettings();
-  server.send(200, "text/plain", "Settings saved");
+void webSave() {
+  if (webAuth()) {
+    saveSettings();
+    server.send(200, "text/plain", "Settings saved");
+  }
 }
 
 // Manage update from SPIFFS
@@ -355,25 +366,26 @@ void updateESP() {
 
 // Manage Upload of binary to SPIFFS
 void webUpload() {
-  webAuth();
-  HTTPUpload& upload = server.upload();
+  if (webAuth()) {
+    HTTPUpload& upload = server.upload();
 
-  if (upload.status == UPLOAD_FILE_START) {
-    String filename = "/update.bin";
-    fsUploadFile = SPIFFS.open(filename, "w");
-  } else if (upload.status == UPLOAD_FILE_WRITE) {
-    //Serial.print("handleFileUpload Data: ");
-    //Serial.println(upload.currentSize);
-    if (fsUploadFile) {
-      fsUploadFile.write(upload.buf, upload.currentSize);
-    }
-  } else if (upload.status == UPLOAD_FILE_END) {
-    if (fsUploadFile) {
-      fsUploadFile.close();
-      Serial.println(TEXT_UPDATE_FINISHED);
-      updateESP();
-    } else {
-      Serial.println(TEXT_UPDATE_FAILED);
+    if (upload.status == UPLOAD_FILE_START) {
+      String filename = "/update.bin";
+      fsUploadFile = SPIFFS.open(filename, "w");
+    } else if (upload.status == UPLOAD_FILE_WRITE) {
+      //Serial.print("handleFileUpload Data: ");
+      //Serial.println(upload.currentSize);
+      if (fsUploadFile) {
+        fsUploadFile.write(upload.buf, upload.currentSize);
+      }
+    } else if (upload.status == UPLOAD_FILE_END) {
+      if (fsUploadFile) {
+        fsUploadFile.close();
+        Serial.println(TEXT_UPDATE_FINISHED);
+        updateESP();
+      } else {
+        Serial.println(TEXT_UPDATE_FAILED);
+      }
     }
   }
 }

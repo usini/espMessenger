@@ -3,6 +3,9 @@
   Licence : MIT
 */
 #include <Arduino.h>
+#include "../web/web_index_fr.h"
+#include "../web/web_lang_fr.h"
+
 //banner.h
 const String TEXT_INTRO = "|Un afficheur connecté à base de Matrice 8x8 fait par usini|";
 const String TEXT_CONNECTION = "~~~~~~~~~~  Connexion ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
