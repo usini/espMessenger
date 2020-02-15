@@ -1,0 +1,73 @@
+[
+    {
+        "id": "1b33bff3.a01df8",
+        "type": "function",
+        "z": "4035d385.6e75b4",
+        "name": "Convert Request to Text",
+        "func": "id = \"messenger.local\";\n\nmsg.payload = encodeURIComponent(msg.payload);\nmsg.url = \"http://\" + id + \"/message/\" + msg.payload;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 810,
+        "y": 480,
+        "wires": [
+            [
+                "61710b9c.c03854",
+                "4e2b1879.07e0b8"
+            ]
+        ]
+    },
+    {
+        "id": "61710b9c.c03854",
+        "type": "http request",
+        "z": "4035d385.6e75b4",
+        "name": "",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": false,
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "basic",
+        "x": 1080,
+        "y": 480,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4e2b1879.07e0b8",
+        "type": "debug",
+        "z": "4035d385.6e75b4",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 1080,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "9a4746e2.e747e8",
+        "type": "inject",
+        "z": "4035d385.6e75b4",
+        "name": "",
+        "topic": "",
+        "payload": "This is a test",
+        "payloadType": "str",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 580,
+        "y": 600,
+        "wires": [
+            [
+                "1b33bff3.a01df8"
+            ]
+        ]
+    }
+]
