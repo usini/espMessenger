@@ -10,22 +10,23 @@
   <h1><span>&#128223;</span> <span id="name">...</span></h1>
   <div id="loading" class="loading"></div>
   <form id="display_form">
-    <input type="text" maxlength="280" placeholder="Write your message here" name="message"> <button style="border-radius:0px;float: right;" type="submit">Display</button>
+    <input id="text_input" type="text" maxlength="280" placeholder="Write your message" name="message"> <button id="ok_button" style="border-radius:0px;float: right;width:20%;" type="submit">OK</button>
   </form>
-  <h1> Speed &nbsp; <input style="direction: rtl;" id="speed" type='range' value='20' min='1' max='100' onchange="changeSpeed(this.value)"/></h1>
-  <h1> Luminosity &nbsp;<input id="intensity" type='range' value='15' min='0' max='15' onchange="changeIntensity(this.value)"/></h1>
+  <h1><span id="speed_text">Speed</span>&nbsp;<input style="direction: rtl;" id="speed" type='range' value='20' min='1' max='100' onchange="changeSpeed(this.value)"/></h1>
+  <h1><span id="brightness_text">Brightness</span>&nbsp;<input id="intensity" type='range' value='15' min='0' max='15' onchange="changeIntensity(this.value)"/></h1>
   <div style="text-align: center">
-    <button onclick="reboot()"> &#128260; Restart </button>
+    <button onclick="reboot()"> &#128260; <span id="restart_button">Restart</span> </button>
   </div>
 </body>
+
+<div style="text-align: center">
+  <form method='POST' action='/update' enctype='multipart/form-data'><input type='file' name='update'><input id="update_button" type='submit' value='Update'></form>
+</div>
+<span id="project_name">espMessenger by µsini : </span>&nbsp;<a id="project_link" href="https://github.com/usini/espMessenger"> Replicate me!</a>
 
 <script src="toast.min.js"></script>
 <script src="lang.js"></script>
 <script src="script.js"></script>
-<div style="text-align: center">
-  <form method='POST' action='/update' enctype='multipart/form-data'><input type='file' name='update'><input type='submit' value='Update'></form>
-</div>
-espMessenger by µsini : <a href="https://github.com/usini/espMessenger"> Replicate me!</a>
 <script>
   manage_index_form();
 </script>

@@ -2,7 +2,19 @@
     //Get Name
     settings = {};   
     getSettings();
+    translation();
 
+    function translation(){
+      document.getElementById("ok_button").innerHTML = txt_ok;
+      document.getElementById("text_input").placeholder = txt_textinput;
+      document.getElementById("project_name").innerHTML = txt_project_name;
+      document.getElementById("project_link").innerHTML = txt_project_link;
+      document.getElementById("update_button").value = txt_update_button;
+      document.getElementById("speed_text").innerHTML = txt_speed;
+      document.getElementById("brightness_text").innerHTML = txt_brightness;
+      document.getElementById("restart_button").innerHTML = txt_restart_button;
+    }
+    
     //Ping
     if(location.protocol == "http:") {
       pingInterval = setInterval(ping, 5000);

@@ -9,16 +9,14 @@
 #include <Ticker.h> //Parralel Manager
 
 // PCB PINS
-
 #define CLK_PIN   D7  // or SCK
 #define CS_PIN    D6  // or SS
 #define DATA_PIN  D5  // or MOSI
-
-// ALT PINS 
+// ALT PINS
 /*
-#define CLK_PIN   D5  // or SCK
-#define DATA_PIN  D6  // or MOSI
-#define CS_PIN    D7  // or SS
+  #define CLK_PIN   D5  // or SCK
+  #define DATA_PIN  D6  // or MOSI
+  #define CS_PIN    D7  // or SS
 */
 
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
@@ -26,6 +24,7 @@
 #define BUF_SIZE  1024
 #define CHAR_LIMIT 280
 Ticker matrixManager;
+bool needScrolling = true;
 
 char curMessage[BUF_SIZE];
 char newMessage[BUF_SIZE];
@@ -36,14 +35,18 @@ MD_Parola* matrix;
 
 //Scroll curMessage on Matrix (if newMessage change update curMessage)
 void matrixUpdate() {
-  if (matrix->displayAnimate())
-  {
-    if (newMessageAvailable)
+  if (needScrolling) {
+    if (matrix->displayAnimate())
     {
-      strcpy(curMessage, newMessage);
-      newMessageAvailable = false;
+      if (newMessageAvailable)
+      {
+        strcpy(curMessage, newMessage);
+        newMessageAvailable = false;
+      }
+      matrix->displayReset();
     }
-    matrix->displayReset();
+  } else {
+    matrix->displayAnimate();
   }
 }
 
@@ -108,15 +111,27 @@ char* utf8ascii(char* s) {
 
 // Convert UTF8 char pointer to Extended Ascii char pointer and copy it inside newMessage
 void matrixText(char *message, bool instant) {
-  //if (strlen(message) <= CHAR_LIMIT )
+  if(!needScrolling){
+    matrix->displayClear();
+  }
+  
+  if (strlen(message) <= settings.devices + 1) {
+    needScrolling = false;
+  } else {
+    needScrolling = true;
+  }
   message = utf8ascii(message);
   //Serial.println(strlen(message));
   strcpy(newMessage, message);
   newMessageAvailable = true;
-  if (instant) {
-    matrix->displayClear();
-    strcpy(curMessage, newMessage);
-    resetScrolling();
+  if(needScrolling){
+    if (instant) {
+      matrix->displayClear();
+      strcpy(curMessage, newMessage);
+      resetScrolling();
+    }
+  } else {
+    matrix->displayText(newMessage, PA_CENTER, 0, 0, PA_PRINT, PA_NO_EFFECT);
   }
 
   Serial.print(TEXT_MESSAGE);

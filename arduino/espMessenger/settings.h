@@ -11,6 +11,8 @@
 const char *settings_file = "/settings.json";
 bool shouldSaveSettings = false;
 
+const String VERSION = "v1.1";
+
 // Based on this example : https://github.com/bblanchon/ArduinoJson/blob/6.x/examples/JsonConfigFile/JsonConfigFile.ino
 struct Settings {
   char name[128];

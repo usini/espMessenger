@@ -3,7 +3,6 @@
   Licence : MIT
 */
 #include <Arduino.h>
-#include "../web/web_index.h"
 #include "../web/web_lang_en.h"
 
 //banner.h

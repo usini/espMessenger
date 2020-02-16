@@ -64,7 +64,6 @@ def convertToGZIP(filename, varname, new_filename):
     index_final_file.write(index_final)
 
 convertToGZIP("index.html", "MES_INDEX", "../web_index.h")
-convertToGZIP("index_fr.html", "MES_INDEX", "../web_index_fr.h")
 convertToGZIP("script.js", "MES_SCRIPT", "../web_script.h")
 convertToGZIP("lang_fr.js", "MES_SCRIPT_LANG", "../web_lang_fr.h")
 convertToGZIP("lang_en.js", "MES_SCRIPT_LANG", "../web_lang_en.h")

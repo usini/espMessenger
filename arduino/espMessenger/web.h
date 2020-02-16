@@ -3,6 +3,7 @@
   Licence : MIT
 */
 
+#include "web/web_index.h"
 #include "web/web_script.h"
 #include "web/web_style.h"
 #include "web/web_range.h"
@@ -403,6 +404,7 @@ void webStart() {
   server.on("/range.css", webRange);
   server.on("/toast.min.js", webToast);
   server.on("/script.js", webScript);
+  server.on("/lang.js", webLang);
   server.on("/settings", webSettings);
   server.on("/save", webSave);
   server.on("/update", HTTP_POST, []() {

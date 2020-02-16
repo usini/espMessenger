@@ -3,4 +3,11 @@ txt_connected = "Connected";
 txt_disconnected = "Disconnected";
 txt_reconnection = "Reconnection...";
 txt_message_sent = "Message sent";
-
+txt_ok = "OK";
+txt_textinput = "Write your message";
+txt_project_name = "espMessenger by µsini v1.1";
+txt_project_link = "Replicate me";
+txt_update_button = "Update";
+txt_speed = "Speed";
+txt_brightness = "Brightness";
+txt_restart_button = "Restart";
